@@ -2,8 +2,8 @@
 
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
 use components::{
-    Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Laser, Movable,
-    Player, SpriteSize, Velocity, Invincibility, InvincibilityTimer,
+    Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Invincibility,
+    InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
 };
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
@@ -299,7 +299,12 @@ fn explosion_animation_system(
 fn invincibility_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut InvincibilityTimer, &mut Invincibility, &mut Sprite)>,
+    mut query: Query<(
+        Entity,
+        &mut InvincibilityTimer,
+        &mut Invincibility,
+        &mut Sprite,
+    )>,
 ) {
     for (entity, mut timer, mut invincibility, mut sprite) in query.iter_mut() {
         invincibility.0 -= time.delta().as_secs_f32();
@@ -310,7 +315,7 @@ fn invincibility_system(
             let color_a = sprite.color.a();
             match sprite.color.a() {
                 a if a == 1. => sprite.color.set_a(0.3),
-                _ => sprite.color.set_a(1.)
+                _ => sprite.color.set_a(1.),
             };
         }
 

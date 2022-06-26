@@ -1,7 +1,10 @@
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
-use crate::components::{FromPlayer, Laser, Movable, Player, SpriteSize, Velocity, Invincibility, InvincibilityTimer, FiringCooldownTimer};
+use crate::components::{
+    FiringCooldownTimer, FromPlayer, Invincibility, InvincibilityTimer, Laser, Movable, Player,
+    SpriteSize, Velocity,
+};
 use crate::{
     GameTextures, PlayerState, WinSize, BASE_SPEED, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY,
     PLAYER_SIZE, SPRITE_SCALE, TIME_STEP,
@@ -95,7 +98,9 @@ fn player_fire_system(
             spawn_laser(x_offset);
             spawn_laser(-x_offset);
 
-            commands.entity(player_entity).insert(FiringCooldownTimer::default());
+            commands
+                .entity(player_entity)
+                .insert(FiringCooldownTimer::default());
         }
     }
 }
