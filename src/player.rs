@@ -1,7 +1,7 @@
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
-use crate::components::{FromPlayer, Laser, Movable, Player, SpriteSize, Velocity, Invincibility, InvincibilityTimer};
+use crate::components::{FromPlayer, Laser, Movable, Player, SpriteSize, Velocity, Invincibility, InvincibilityTimer, FiringCooldownTimer};
 use crate::{
     GameTextures, PlayerState, WinSize, BASE_SPEED, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY,
     PLAYER_SIZE, SPRITE_SCALE, TIME_STEP,
@@ -18,7 +18,8 @@ impl Plugin for PlayerPlugin {
                     .with_system(player_spawn_system),
             )
             .add_system(player_keyboard_event_system)
-            .add_system(player_fire_system);
+            .add_system(player_fire_system)
+            .add_system(firing_cooldown_system);
     }
 }
 
@@ -66,9 +67,9 @@ fn player_fire_system(
     mut commands: Commands,
     kb: Res<Input<KeyCode>>,
     game_textures: Res<GameTextures>,
-    query: Query<&Transform, With<Player>>,
+    query: Query<(Entity, &Transform), (With<Player>, Without<FiringCooldownTimer>)>,
 ) {
-    if let Ok(player_tf) = query.get_single() {
+    if let Ok((player_entity, player_tf)) = query.get_single() {
         if kb.just_pressed(KeyCode::Space) {
             let (x, y) = (player_tf.translation.x, player_tf.translation.y);
             let x_offset = PLAYER_SIZE.0 / 2. * SPRITE_SCALE - 5.;
@@ -93,6 +94,8 @@ fn player_fire_system(
 
             spawn_laser(x_offset);
             spawn_laser(-x_offset);
+
+            commands.entity(player_entity).insert(FiringCooldownTimer::default());
         }
     }
 }
@@ -109,5 +112,19 @@ fn player_keyboard_event_system(
         } else {
             0.
         };
+    }
+}
+
+fn firing_cooldown_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut FiringCooldownTimer)>,
+) {
+    for (entity, mut timer) in query.iter_mut() {
+        timer.0.tick(time.delta());
+
+        if timer.0.finished() {
+            commands.entity(entity).remove::<FiringCooldownTimer>();
+        }
     }
 }

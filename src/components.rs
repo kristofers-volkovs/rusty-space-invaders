@@ -47,6 +47,14 @@ impl Default for InvincibilityTimer {
     }
 }
 
+#[derive(Component)]
+pub struct FiringCooldownTimer(pub Timer);
+
+impl Default for FiringCooldownTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(0.5, false))
+    }
+}
 
 // Player Components
 
