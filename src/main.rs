@@ -3,7 +3,7 @@
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
 use components::{
     Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Laser, Movable,
-    Player, SpriteSize, Velocity,
+    Player, SpriteSize, Velocity, Invincibility,
 };
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
@@ -99,6 +99,7 @@ fn main() {
         .add_system(explosion_to_spawn_system)
         .add_system(explosion_animation_system)
         .add_system(enemy_laser_hit_player_system)
+        .add_system(invincibility_system)
         .run();
 }
 
@@ -220,7 +221,7 @@ fn enemy_laser_hit_player_system(
     mut player_state: ResMut<PlayerState>,
     time: Res<Time>,
     laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromEnemy>)>,
-    player_query: Query<(Entity, &Transform, &SpriteSize), With<Player>>,
+    player_query: Query<(Entity, &Transform, &SpriteSize), (With<Player>, Without<Invincibility>)>,
 ) {
     if let Ok((player_entity, player_tf, player_size)) = player_query.get_single() {
         let player_scale = Vec2::from(player_tf.scale.xy());
@@ -291,6 +292,19 @@ fn explosion_animation_system(
             if sprite.index >= EXPLOSION_LEN {
                 commands.entity(entity).despawn();
             }
+        }
+    }
+}
+
+fn invincibility_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Invincibility), With<Invincibility>>,
+) {
+    for (entity, mut invincibility) in query.iter_mut() {
+        invincibility.0 -= time.delta().as_secs_f32();
+        if invincibility.0 < 0. {
+            commands.entity(entity).remove::<Invincibility>();
         }
     }
 }

@@ -29,6 +29,16 @@ impl From<(f32, f32)> for SpriteSize {
     }
 }
 
+#[derive(Component)]
+pub struct Invincibility(pub f32);
+
+impl From<f32> for Invincibility {
+    fn from(val: f32) -> Self {
+        Invincibility(val)
+    }
+}
+
+
 // Player Components
 
 #[derive(Component)]
