@@ -7,10 +7,12 @@ use components::{
 };
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
+use ui::UiPlugin;
 
 mod components;
 mod enemy;
 mod player;
+mod ui;
 
 // Asset Constants
 
@@ -18,6 +20,8 @@ const PLAYER_SPRITE: &str = "player_a_01.png";
 const PLAYER_SIZE: (f32, f32) = (144., 75.);
 const PLAYER_LASER_SPRITE: &str = "laser_a_01.png";
 const PLAYER_LASER_SIZE: (f32, f32) = (9., 54.);
+const PLAYER_HEART_FULL: &str = "hud_heartFull.png";
+const PLAYER_HEART_EMPTY: &str = "hud_heartEmpty.png";
 
 const ENEMY_SPRITE: &str = "enemy_a_01.png";
 const ENEMY_SIZE: (f32, f32) = (144., 75.);
@@ -28,6 +32,8 @@ const EXPLOSION_SHEET: &str = "explo_a_sheet.png";
 const EXPLOSION_LEN: usize = 16;
 
 const SPRITE_SCALE: f32 = 0.5;
+
+const GAME_FONT: &str = "MinimalPixel v2.ttf";
 
 // Resources
 
@@ -42,6 +48,12 @@ struct GameTextures {
     enemy: Handle<Image>,
     enemy_laser: Handle<Image>,
     explosion: Handle<TextureAtlas>,
+}
+
+struct UiTextures {
+    heart_full: Handle<Image>,
+    heart_empty: Handle<Image>,
+    ui_font: Handle<Font>,
 }
 
 struct EnemyCount(u32);
@@ -93,6 +105,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(PlayerPlugin)
         .add_plugin(EnemyPlugin)
+        .add_plugin(UiPlugin)
         .add_startup_system(setup_system)
         .add_system(movable_system)
         .add_system(player_laser_hit_enemy_system)
@@ -109,8 +122,9 @@ fn setup_system(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut windows: ResMut<Windows>,
 ) {
-    // camera
+    // cameras
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
 
     // capture window size
     let window = windows.get_primary_mut().unwrap();
@@ -136,7 +150,15 @@ fn setup_system(
         enemy_laser: asset_server.load(ENEMY_LASER_SPRITE),
         explosion,
     };
+
+    let ui_textures = UiTextures {
+        heart_full: asset_server.load(PLAYER_HEART_FULL),
+        heart_empty: asset_server.load(PLAYER_HEART_EMPTY),
+        ui_font: asset_server.load(GAME_FONT),
+    };
+
     commands.insert_resource(game_textures);
+    commands.insert_resource(ui_textures);
     commands.insert_resource(EnemyCount(0));
 }
 
