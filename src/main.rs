@@ -3,7 +3,7 @@
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
 use components::{
     Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Laser, Movable,
-    Player, SpriteSize, Velocity, Invincibility,
+    Player, SpriteSize, Velocity, Invincibility, InvincibilityTimer,
 };
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
@@ -299,12 +299,26 @@ fn explosion_animation_system(
 fn invincibility_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Invincibility), With<Invincibility>>,
+    mut query: Query<(Entity, &mut InvincibilityTimer, &mut Invincibility, &mut Sprite)>,
 ) {
-    for (entity, mut invincibility) in query.iter_mut() {
+    for (entity, mut timer, mut invincibility, mut sprite) in query.iter_mut() {
         invincibility.0 -= time.delta().as_secs_f32();
+        timer.0.tick(time.delta());
+
+        // entities alpha color is reset so it seems like the player is flickering
+        if timer.0.finished() {
+            let color_a = sprite.color.a();
+            match sprite.color.a() {
+                a if a == 1. => sprite.color.set_a(0.3),
+                _ => sprite.color.set_a(1.)
+            };
+        }
+
+        // when invincibility runs out then remove invincibility component and reset alpha for color
         if invincibility.0 < 0. {
             commands.entity(entity).remove::<Invincibility>();
+            commands.entity(entity).remove::<InvincibilityTimer>();
+            sprite.color.set_a(1.);
         }
     }
 }

@@ -1,7 +1,7 @@
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
-use crate::components::{FromPlayer, Laser, Movable, Player, SpriteSize, Velocity, Invincibility};
+use crate::components::{FromPlayer, Laser, Movable, Player, SpriteSize, Velocity, Invincibility, InvincibilityTimer};
 use crate::{
     GameTextures, PlayerState, WinSize, BASE_SPEED, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY,
     PLAYER_SIZE, SPRITE_SCALE, TIME_STEP,
@@ -55,7 +55,8 @@ fn player_spawn_system(
                 auto_despawn: false,
             })
             .insert(Velocity { x: 0., y: 0. })
-            .insert(Invincibility::from(3.));
+            .insert(Invincibility::from(3.))
+            .insert(InvincibilityTimer::default());
 
         player_state.spawned();
     }

@@ -38,6 +38,15 @@ impl From<f32> for Invincibility {
     }
 }
 
+#[derive(Component)]
+pub struct InvincibilityTimer(pub Timer);
+
+impl Default for InvincibilityTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(0.2, true))
+    }
+}
+
 
 // Player Components
 
