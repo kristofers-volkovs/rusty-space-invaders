@@ -4,7 +4,7 @@ use bevy::{
     prelude::Component,
 };
 
-// region: --- Common Components
+// Common Components
 
 #[derive(Component)]
 pub struct Velocity {
@@ -29,9 +29,7 @@ impl From<(f32, f32)> for SpriteSize {
     }
 }
 
-// endregion --- Common Components
-
-// region: --- Player Components
+// Player Components
 
 #[derive(Component)]
 pub struct Player;
@@ -39,9 +37,7 @@ pub struct Player;
 #[derive(Component)]
 pub struct FromPlayer;
 
-// endregion --- Player Components
-
-// region: --- Enemy Components
+// Enemy Components
 
 #[derive(Component)]
 pub struct Enemy;
@@ -49,9 +45,7 @@ pub struct Enemy;
 #[derive(Component)]
 pub struct FromEnemy;
 
-// endregion --- Enemy Components
-
-// region: --- Explosion Components
+// Explosion Components
 
 #[derive(Component)]
 pub struct Explosion;
@@ -67,5 +61,3 @@ impl Default for ExplosionTimer {
         Self(Timer::from_seconds(0.05, true))
     }
 }
-
-// region: --- Explosion Components

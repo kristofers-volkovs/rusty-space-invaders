@@ -12,7 +12,7 @@ mod components;
 mod enemy;
 mod player;
 
-// region: --- Asset Constants
+// Asset Constants
 
 const PLAYER_SPRITE: &str = "player_a_01.png";
 const PLAYER_SIZE: (f32, f32) = (144., 75.);
@@ -29,9 +29,7 @@ const EXPLOSION_LEN: usize = 16;
 
 const SPRITE_SCALE: f32 = 0.5;
 
-// endregion --- Asset Constants
-
-// region: --- Resource
+// Resources
 
 pub struct WinSize {
     pub w: f32,
@@ -74,9 +72,7 @@ impl PlayerState {
     }
 }
 
-// endregion: --- Resource
-
-// region -- Game Constants
+// Game Constants
 
 const TIME_STEP: f32 = 1. / 60.;
 const BASE_SPEED: f32 = 500.;
@@ -84,8 +80,6 @@ const BASE_SPEED: f32 = 500.;
 const PLAYER_RESPAWN_DELAY: f64 = 2.;
 const ENEMY_MAX: u32 = 2;
 const FORMATION_MEMBERS_MAX: u32 = 2;
-
-// endregion -- Game Constants
 
 fn main() {
     App::new()
