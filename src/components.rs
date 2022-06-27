@@ -88,3 +88,8 @@ impl Default for ExplosionTimer {
         Self(Timer::from_seconds(0.05, true))
     }
 }
+
+// Ui Components
+
+#[derive(Component)]
+pub struct HeartImage;
