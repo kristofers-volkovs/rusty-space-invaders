@@ -35,8 +35,12 @@ fn player_spawn_system(
 ) {
     let now = time.seconds_since_startup();
     let last_shot = player_state.last_shot;
+    let health_remaining = player_state.health;
 
-    if !player_state.on && (last_shot == -1. || now > last_shot + PLAYER_RESPAWN_DELAY) {
+    if !player_state.on
+        && (last_shot == -1. || now > last_shot + PLAYER_RESPAWN_DELAY)
+        && health_remaining > 0
+    {
         // add player
         let bottom = -win_size.h / 2.; // bottom of the screen
         commands

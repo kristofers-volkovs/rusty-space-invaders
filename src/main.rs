@@ -60,7 +60,9 @@ struct EnemyCount(u32);
 
 struct PlayerState {
     on: bool,       // alive
-    last_shot: f64, // -1 if not shot
+    last_shot: f64, // last time died, -1 if not shot
+    max_health: usize,
+    health: usize,
 }
 
 impl Default for PlayerState {
@@ -68,6 +70,8 @@ impl Default for PlayerState {
         Self {
             on: false,
             last_shot: -1.,
+            health: 3,
+            max_health: 3,
         }
     }
 }
@@ -76,6 +80,7 @@ impl PlayerState {
     pub fn shot(&mut self, time: f64) {
         self.on = false;
         self.last_shot = time;
+        self.health -= 1;
     }
 
     pub fn spawned(&mut self) {
