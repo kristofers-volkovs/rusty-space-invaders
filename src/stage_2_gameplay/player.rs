@@ -1,13 +1,13 @@
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
-use crate::components::{
-    FiringCooldownTimer, FromPlayer, Invincibility, InvincibilityTimer, Laser, Movable, Player,
-    SpriteSize, Velocity,
-};
-use crate::{
+use crate::common::constants::{
     GameTextures, PlayerState, WinSize, BASE_SPEED, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY,
     PLAYER_SIZE, SPRITE_SCALE, TIME_STEP,
+};
+use crate::stage_2_gameplay::components::{
+    FiringCooldownTimer, FromPlayer, Invincibility, InvincibilityTimer, Laser, Movable, Player,
+    SpriteSize, Velocity,
 };
 
 pub struct PlayerPlugin;
