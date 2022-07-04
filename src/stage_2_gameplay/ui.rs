@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
-use crate::common::constants::{PlayerState, UiTextures, WinSize};
+use crate::common::constants::{UiTextures, WinSize};
 use crate::stage_2_gameplay::components::HeartImage;
+use crate::stage_2_gameplay::constants::PlayerState;
 
 pub struct UiPlugin;
 

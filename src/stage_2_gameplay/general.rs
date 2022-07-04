@@ -5,6 +5,11 @@ use crate::stage_2_gameplay::components::{
 };
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
 
+use super::constants::{
+    EnemyCount, GameTextures, PlayerState, BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE,
+    EXPLOSION_LEN, EXPLOSION_SHEET, PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
+};
+
 pub struct GeneralPlugin;
 
 impl Plugin for GeneralPlugin {

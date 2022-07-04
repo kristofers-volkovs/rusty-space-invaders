@@ -5,11 +5,12 @@ use general::GeneralPlugin;
 use player::PlayerPlugin;
 use ui::UiPlugin;
 
-pub mod components;
-pub mod enemy;
-pub mod general;
-pub mod player;
-pub mod ui;
+mod components;
+mod constants;
+mod enemy;
+mod general;
+mod player;
+mod ui;
 
 pub struct GameplayStage;
 

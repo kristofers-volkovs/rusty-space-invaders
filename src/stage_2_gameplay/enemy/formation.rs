@@ -1,7 +1,8 @@
 use bevy::prelude::Component;
 use rand::{thread_rng, Rng};
 
-use crate::common::constants::{WinSize, BASE_SPEED, FORMATION_MEMBERS_MAX};
+use crate::common::constants::WinSize;
+use crate::stage_2_gameplay::constants::{BASE_SPEED, FORMATION_MEMBERS_MAX};
 
 // Component - Enemy Formation (per enemy)
 #[derive(Clone, Component)]

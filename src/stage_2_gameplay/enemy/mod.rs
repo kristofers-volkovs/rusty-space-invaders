@@ -5,10 +5,11 @@ use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 
-use crate::common::constants::{
-    EnemyCount, GameTextures, WinSize, BASE_SPEED, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE,
-    SPRITE_SCALE, TIME_STEP,
+use super::constants::{
+    EnemyCount, GameTextures, BASE_SPEED, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE,
+    TIME_STEP,
 };
+use crate::common::constants::WinSize;
 use crate::stage_2_gameplay::components::{Enemy, FromEnemy, Laser, Movable, SpriteSize, Velocity};
 
 use self::formation::{Formation, FormationMaker};
