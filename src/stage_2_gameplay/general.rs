@@ -24,33 +24,11 @@ impl Plugin for GeneralPlugin {
     }
 }
 
-fn setup_cameras_system(mut commands: Commands) {
-    // cameras
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-    commands.spawn_bundle(UiCameraBundle::default());
-}
-
 fn game_setup_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut windows: ResMut<Windows>,
 ) {
-    // cameras
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-    commands.spawn_bundle(UiCameraBundle::default());
-
-    // capture window size
-    let window = windows.get_primary_mut().unwrap();
-    let (win_w, win_h) = (window.width(), window.height());
-
-    // position window (for tutorial)
-    window.set_position(IVec2::new(2780, 4900));
-
-    // add WinSize resource
-    let win_size = WinSize { w: win_w, h: win_h };
-    commands.insert_resource(win_size);
-
     // create explosion texture atlas
     let texture_handle = asset_server.load(EXPLOSION_SHEET);
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(64., 64.), 4, 4);
@@ -65,14 +43,7 @@ fn game_setup_system(
         explosion,
     };
 
-    let ui_textures = UiTextures {
-        heart_full: asset_server.load(PLAYER_HEART_FULL),
-        heart_empty: asset_server.load(PLAYER_HEART_EMPTY),
-        ui_font: asset_server.load(GAME_FONT),
-    };
-
     commands.insert_resource(game_textures);
-    commands.insert_resource(ui_textures);
     commands.insert_resource(EnemyCount(0));
 }
 
