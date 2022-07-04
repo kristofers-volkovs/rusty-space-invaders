@@ -1,26 +1,31 @@
-use crate::common::constants::*;
-use crate::stage_2_gameplay::components::{
+use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
+
+use super::components::{
     Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Invincibility,
     InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
 };
-use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
-
 use super::constants::{
-    EnemyCount, GameTextures, PlayerState, BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE,
-    EXPLOSION_LEN, EXPLOSION_SHEET, PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
+    EnemyCount, GameTextures, PlayerState, BASE_SPEED, EXPLOSION_LEN, TIME_STEP, EXPLOSION_SHEET, PLAYER_SPRITE, PLAYER_LASER_SPRITE, ENEMY_SPRITE, ENEMY_LASER_SPRITE,
 };
+use super::enemy::formation::FormationMaker;
+use crate::common::{constants::*, AppState};
 
 pub struct GeneralPlugin;
 
 impl Plugin for GeneralPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(game_setup_system)
-            .add_system(movable_system)
-            .add_system(player_laser_hit_enemy_system)
-            .add_system(explosion_to_spawn_system)
-            .add_system(explosion_animation_system)
-            .add_system(enemy_laser_hit_player_system)
-            .add_system(invincibility_system);
+        app.init_resource::<PlayerState>()
+            .init_resource::<FormationMaker>()
+            .add_system_set(SystemSet::on_enter(AppState::Gameplay).with_system(game_setup_system))
+            .add_system_set(
+                SystemSet::on_update(AppState::Gameplay)
+                    .with_system(movable_system)
+                    .with_system(player_laser_hit_enemy_system)
+                    .with_system(explosion_to_spawn_system)
+                    .with_system(explosion_animation_system)
+                    .with_system(enemy_laser_hit_player_system)
+                    .with_system(invincibility_system),
+            );
     }
 }
 

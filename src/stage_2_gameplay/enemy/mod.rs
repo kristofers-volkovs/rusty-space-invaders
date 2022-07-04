@@ -10,24 +10,27 @@ use super::constants::{
     TIME_STEP,
 };
 use crate::common::constants::WinSize;
+use crate::common::AppState;
 use crate::stage_2_gameplay::components::{Enemy, FromEnemy, Laser, Movable, SpriteSize, Velocity};
 
 use self::formation::{Formation, FormationMaker};
 
-mod formation;
+pub mod formation;
 
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(FormationMaker::default())
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(FixedTimestep::step(1.))
-                    .with_system(enemy_spawn_system),
-            )
-            .add_system(enemy_movement_system)
-            .add_system(enemy_fire_system);
+        app.add_system_set(
+            SystemSet::on_update(AppState::Gameplay)
+                .with_run_criteria(FixedTimestep::step(1.))
+                .with_system(enemy_spawn_system),
+        )
+        .add_system_set(
+            SystemSet::on_update(AppState::Gameplay)
+                .with_system(enemy_movement_system)
+                .with_system(enemy_fire_system),
+        );
         // .add_system_set(
         //     SystemSet::new()
         //         .with_run_criteria(enemy_fire_criteria)

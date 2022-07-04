@@ -6,6 +6,7 @@ use super::constants::{
     SPRITE_SCALE, TIME_STEP,
 };
 use crate::common::constants::WinSize;
+use crate::common::AppState;
 use crate::stage_2_gameplay::components::{
     FiringCooldownTimer, FromPlayer, Invincibility, InvincibilityTimer, Laser, Movable, Player,
     SpriteSize, Velocity,
@@ -15,15 +16,17 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(PlayerState::default())
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(FixedTimestep::step(0.5))
-                    .with_system(player_spawn_system),
-            )
-            .add_system(player_keyboard_event_system)
-            .add_system(player_fire_system)
-            .add_system(firing_cooldown_system);
+        app.add_system_set(
+            SystemSet::on_update(AppState::Gameplay)
+                .with_run_criteria(FixedTimestep::step(0.5))
+                .with_system(player_spawn_system),
+        )
+        .add_system_set(
+            SystemSet::on_update(AppState::Gameplay)
+                .with_system(player_keyboard_event_system)
+                .with_system(player_fire_system)
+                .with_system(firing_cooldown_system),
+        );
     }
 }
 

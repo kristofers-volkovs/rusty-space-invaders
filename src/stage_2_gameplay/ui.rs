@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::common::constants::{UiTextures, WinSize};
+use crate::common::AppState;
 use crate::stage_2_gameplay::components::HeartImage;
 use crate::stage_2_gameplay::constants::PlayerState;
 
@@ -8,15 +9,16 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system_to_stage(StartupStage::PostStartup, setup_ui_system)
-            .add_system(heart_image_update_system);
+        app.add_system_set(SystemSet::on_enter(AppState::Gameplay).with_system(setup_ui_system))
+            .add_system_set(
+                SystemSet::on_update(AppState::Gameplay).with_system(heart_image_update_system),
+            );
     }
 }
 
 fn setup_ui_system(
     mut commands: Commands,
     ui_textures: Res<UiTextures>,
-    win_size: Res<WinSize>,
     player_state: Res<PlayerState>,
 ) {
     commands
