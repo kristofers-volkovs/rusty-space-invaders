@@ -27,9 +27,10 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        // --- Universal systems ---
+        // --- General systems ---
         .add_startup_system(setup_system)
         // --- Initial state ---
+        .add_state(AppState::Gameplay)
         // --- Stages ---
         .add_plugin(MainMenuStage)
         .add_plugin(GameplayStage)
