@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 
 use crate::common::constants::{UiTextures, WinSize};
 use crate::common::AppState;
@@ -9,9 +10,12 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(AppState::Gameplay).with_system(setup_ui_system))
+        app.add_enter_system(AppState::Gameplay, setup_ui_system)
             .add_system_set(
-                SystemSet::on_update(AppState::Gameplay).with_system(heart_image_update_system),
+                ConditionSet::new()
+                    .run_in_state(AppState::Gameplay)
+                    .with_system(heart_image_update_system)
+                    .into(),
             );
     }
 }

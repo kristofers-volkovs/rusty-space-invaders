@@ -1,6 +1,7 @@
 #![allow(unused)] // temp
 
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
 
 use common::constants::{UiTextures, WinSize, GAME_FONT, PLAYER_HEART_EMPTY, PLAYER_HEART_FULL};
 use common::AppState;
@@ -30,7 +31,7 @@ fn main() {
         // --- General systems ---
         .add_startup_system(setup_system)
         // --- Initial state ---
-        .add_state(AppState::Gameplay)
+        .add_loopless_state(AppState::Gameplay)
         // --- Stages ---
         .add_plugin(MainMenuStage)
         .add_plugin(GameplayStage)
@@ -39,21 +40,9 @@ fn main() {
         .run();
 }
 
-fn setup_system(
-    mut commands: Commands,
-    mut windows: ResMut<Windows>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
-
-    // capture window size
-    let window = windows.get_primary_mut().unwrap();
-    let (win_w, win_h) = (window.width(), window.height());
-
-    // add WinSize resource
-    let win_size = WinSize { w: win_w, h: win_h };
-    commands.insert_resource(win_size);
 
     // add UiTextures resource
     let ui_textures = UiTextures {

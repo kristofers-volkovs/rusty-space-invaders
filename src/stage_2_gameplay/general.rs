@@ -1,11 +1,13 @@
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
+use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 
 use super::components::{
     Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Invincibility,
     InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
 };
 use super::constants::{
-    EnemyCount, GameTextures, PlayerState, BASE_SPEED, EXPLOSION_LEN, TIME_STEP, EXPLOSION_SHEET, PLAYER_SPRITE, PLAYER_LASER_SPRITE, ENEMY_SPRITE, ENEMY_LASER_SPRITE,
+    EnemyCount, GameTextures, PlayerState, BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE,
+    EXPLOSION_LEN, EXPLOSION_SHEET, PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
 };
 use super::enemy::formation::FormationMaker;
 use crate::common::{constants::*, AppState};
@@ -16,15 +18,17 @@ impl Plugin for GeneralPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PlayerState>()
             .init_resource::<FormationMaker>()
-            .add_system_set(SystemSet::on_enter(AppState::Gameplay).with_system(game_setup_system))
+            .add_enter_system(AppState::Gameplay, game_setup_system)
             .add_system_set(
-                SystemSet::on_update(AppState::Gameplay)
+                ConditionSet::new()
+                    .run_in_state(AppState::Gameplay)
                     .with_system(movable_system)
                     .with_system(player_laser_hit_enemy_system)
                     .with_system(explosion_to_spawn_system)
                     .with_system(explosion_animation_system)
                     .with_system(enemy_laser_hit_player_system)
-                    .with_system(invincibility_system),
+                    .with_system(invincibility_system)
+                    .into(),
             );
     }
 }
@@ -32,8 +36,17 @@ impl Plugin for GeneralPlugin {
 fn game_setup_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut windows: ResMut<Windows>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
+    // capture window size
+    let window = windows.get_primary_mut().unwrap();
+    let (win_w, win_h) = (window.width(), window.height());
+
+    // add WinSize resource
+    let win_size = WinSize { w: win_w, h: win_h };
+    commands.insert_resource(win_size);
+
     // create explosion texture atlas
     let texture_handle = asset_server.load(EXPLOSION_SHEET);
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(64., 64.), 4, 4);

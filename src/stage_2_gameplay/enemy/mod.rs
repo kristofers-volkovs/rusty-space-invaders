@@ -1,13 +1,12 @@
 use std::f32::consts::PI;
+use std::time::Duration;
 
-use bevy::core::FixedTimestep;
-use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
+use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
 use rand::{thread_rng, Rng};
 
 use super::constants::{
-    EnemyCount, GameTextures, BASE_SPEED, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE,
-    TIME_STEP,
+    EnemyCount, GameTextures, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE, TIME_STEP,
 };
 use crate::common::constants::WinSize;
 use crate::common::AppState;
@@ -21,21 +20,26 @@ pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(AppState::Gameplay)
-                .with_run_criteria(FixedTimestep::step(1.))
-                .with_system(enemy_spawn_system),
+        let mut fixedupdate = SystemStage::parallel();
+        fixedupdate.add_system_set(
+            ConditionSet::new()
+                .run_in_state(AppState::Gameplay)
+                .with_system(enemy_spawn_system)
+                .into(),
+        );
+
+        app.add_stage_before(
+            CoreStage::Update,
+            "EnemyRespawn",
+            FixedTimestepStage::from_stage(Duration::from_secs_f32(0.5), fixedupdate),
         )
         .add_system_set(
-            SystemSet::on_update(AppState::Gameplay)
+            ConditionSet::new()
+                .run_in_state(AppState::Gameplay)
                 .with_system(enemy_movement_system)
-                .with_system(enemy_fire_system),
+                .with_system(enemy_fire_system)
+                .into(),
         );
-        // .add_system_set(
-        //     SystemSet::new()
-        //         .with_run_criteria(enemy_fire_criteria)
-        //         .with_system(enemy_fire_system),
-        // );
     }
 }
 
@@ -68,14 +72,6 @@ fn enemy_spawn_system(
         enemy_count.0 += 1;
     }
 }
-
-// fn enemy_fire_criteria() -> ShouldRun {
-//     if thread_rng().gen_bool(1. / 60.) {
-//         ShouldRun::Yes
-//     } else {
-//         ShouldRun::No
-//     }
-// }
 
 fn enemy_fire_system(
     mut commands: Commands,

@@ -1,9 +1,10 @@
-use bevy::core::FixedTimestep;
+use std::time::Duration;
+
 use bevy::prelude::*;
+use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
 
 use super::constants::{
-    GameTextures, PlayerState, BASE_SPEED, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE,
-    SPRITE_SCALE, TIME_STEP,
+    GameTextures, PlayerState, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
 };
 use crate::common::constants::WinSize;
 use crate::common::AppState;
@@ -16,16 +17,26 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(AppState::Gameplay)
-                .with_run_criteria(FixedTimestep::step(0.5))
-                .with_system(player_spawn_system),
+        let mut fixedupdate = SystemStage::parallel();
+        fixedupdate.add_system_set(
+            ConditionSet::new()
+                .run_in_state(AppState::Gameplay)
+                .with_system(player_spawn_system)
+                .into(),
+        );
+
+        app.add_stage_before(
+            CoreStage::Update,
+            "PlayerRespawn",
+            FixedTimestepStage::from_stage(Duration::from_secs_f32(0.5), fixedupdate),
         )
         .add_system_set(
-            SystemSet::on_update(AppState::Gameplay)
+            ConditionSet::new()
+                .run_in_state(AppState::Gameplay)
                 .with_system(player_keyboard_event_system)
                 .with_system(player_fire_system)
-                .with_system(firing_cooldown_system),
+                .with_system(firing_cooldown_system)
+                .into(),
         );
     }
 }
