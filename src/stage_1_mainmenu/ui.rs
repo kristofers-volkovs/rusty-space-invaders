@@ -5,7 +5,7 @@ use iyes_loopless::{
     state::NextState,
 };
 
-use crate::common::{constants::UiTextures, AppState};
+use crate::shared::resources::{AppState, UiTextures};
 
 use super::components::{GameplayButton, MainMenu};
 

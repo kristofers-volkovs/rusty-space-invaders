@@ -6,11 +6,15 @@ use super::components::{
     InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
 };
 use super::constants::{
-    EnemyCount, GameTextures, PlayerState, BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE,
-    EXPLOSION_LEN, EXPLOSION_SHEET, PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
+    BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE, EXPLOSION_LEN, EXPLOSION_SHEET,
+    PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
 };
 use super::enemy::formation::FormationMaker;
-use crate::common::{constants::*, AppState};
+use super::resources::{EnemyCount, GameTextures, PlayerState};
+use crate::shared::{
+    constants::*,
+    resources::{AppState, WinSize},
+};
 
 pub struct GeneralPlugin;
 

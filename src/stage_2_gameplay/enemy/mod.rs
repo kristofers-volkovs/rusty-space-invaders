@@ -5,11 +5,9 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
 use rand::{thread_rng, Rng};
 
-use super::constants::{
-    EnemyCount, GameTextures, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE, TIME_STEP,
-};
-use crate::common::constants::WinSize;
-use crate::common::AppState;
+use super::constants::{ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE, TIME_STEP};
+use super::resources::{EnemyCount, GameTextures};
+use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{Enemy, FromEnemy, Laser, Movable, SpriteSize, Velocity};
 
 use self::formation::{Formation, FormationMaker};

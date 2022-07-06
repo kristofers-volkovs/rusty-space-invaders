@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
 
-use crate::common::constants::{UiTextures, WinSize};
-use crate::common::AppState;
+use crate::shared::resources::{AppState, UiTextures, WinSize};
 use crate::stage_2_gameplay::components::HeartImage;
-use crate::stage_2_gameplay::constants::PlayerState;
+use crate::stage_2_gameplay::resources::PlayerState;
 
 pub struct UiPlugin;
 

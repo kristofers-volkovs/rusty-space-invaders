@@ -3,11 +3,9 @@ use std::time::Duration;
 use bevy::prelude::*;
 use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
 
-use super::constants::{
-    GameTextures, PlayerState, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
-};
-use crate::common::constants::WinSize;
-use crate::common::AppState;
+use super::constants::{PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE};
+use super::resources::{GameTextures, PlayerState};
+use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{
     FiringCooldownTimer, FromPlayer, Invincibility, InvincibilityTimer, Laser, Movable, Player,
     SpriteSize, Velocity,

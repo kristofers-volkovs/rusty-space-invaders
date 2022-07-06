@@ -3,15 +3,15 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-use common::constants::{UiTextures, WinSize, GAME_FONT, PLAYER_HEART_EMPTY, PLAYER_HEART_FULL};
-use common::AppState;
+use shared::constants::{GAME_FONT, PLAYER_HEART_EMPTY, PLAYER_HEART_FULL};
+use shared::resources::{AppState, UiTextures, WinSize};
 
 use stage_1_mainmenu::MainMenuStage;
 use stage_2_gameplay::GameplayStage;
 use stage_3_paused::PausedStage;
 use stage_4_gameover::GameOverStage;
 
-mod common;
+mod shared;
 mod stage_1_mainmenu;
 mod stage_2_gameplay;
 mod stage_3_paused;

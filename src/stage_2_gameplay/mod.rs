@@ -10,6 +10,7 @@ mod constants;
 mod enemy;
 mod general;
 mod player;
+mod resources;
 mod ui;
 
 pub struct GameplayStage;
