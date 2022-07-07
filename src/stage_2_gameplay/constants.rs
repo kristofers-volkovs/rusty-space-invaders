@@ -26,5 +26,6 @@ pub const FORMATION_MEMBERS_MAX: u32 = 2;
 
 // Labels
 
+pub const GAMEPLAY_RESET: &str = "gameplay_reset";
 pub const PLAYER_SPAWN: &str = "player_spawn";
 pub const ENEMY_SPAWN: &str = "enemy_spawn";

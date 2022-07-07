@@ -1,5 +1,8 @@
+use bevy::ecs::system::Resource;
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
-use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet, IntoConditionalSystem};
+use iyes_loopless::prelude::{
+    AppLooplessStateExt, ConditionHelpers, ConditionSet, IntoConditionalSystem,
+};
 use iyes_loopless::state::NextState;
 
 use super::components::{
@@ -7,13 +10,13 @@ use super::components::{
     InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
 };
 use super::constants::{
-    BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE, EXPLOSION_LEN, EXPLOSION_SHEET,
+    BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE, EXPLOSION_LEN, EXPLOSION_SHEET, GAMEPLAY_RESET,
     PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
 };
 use super::enemy::formation::FormationMaker;
 use super::resources::{EnemyCount, GameTextures, PlayerState};
-use crate::shared::components::{ExitGameButton, GameRunning, GameplayTeardown};
-use crate::shared::general::{esc_pressed, on_button_interact};
+use crate::shared::components::{ExitGameButton, GameRunning, GameplayTeardown, ResetGameplay};
+use crate::shared::general::{despawn_system, esc_pressed, on_button_interact};
 use crate::shared::{
     constants::*,
     resources::{AppState, WinSize},
@@ -23,9 +26,11 @@ pub struct GeneralPlugin;
 
 impl Plugin for GeneralPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(
+        app.add_enter_system_set(
             AppState::Gameplay,
-            game_setup_system.run_unless_resource_exists::<GameRunning>(),
+            SystemSet::new()
+                .with_system(game_setup_system.run_unless_resource_exists::<GameRunning>())
+                .with_system(init_game_resource_system.run_unless_resource_exists::<GameRunning>()),
         )
         // --- Main gameplay loop ---
         .add_system_set(
@@ -39,7 +44,32 @@ impl Plugin for GeneralPlugin {
                 .with_system(invincibility_system)
                 // pressing esc brings out the menu overlay
                 .with_system(pause_system.run_if(esc_pressed))
+                // when player dies the game over screen pops up
+                .with_system(
+                    game_over_system
+                        .run_if(has_player_died)
+                        .run_unless_resource_exists::<ResetGameplay>(),
+                )
                 .into(),
+        )
+        // --- Despawns the mobs and resets resources ---
+        .add_system_set(
+            ConditionSet::new()
+                .run_in_state(AppState::Gameplay)
+                .run_if_resource_exists::<ResetGameplay>()
+                .label(GAMEPLAY_RESET)
+                // Despawns everyone on the board
+                .with_system(despawn_system::<Enemy>)
+                .with_system(despawn_system::<Player>)
+                .with_system(despawn_system::<Laser>)
+                // Reinitiates resources
+                .with_system(init_game_resource_system)
+                .into(),
+        )
+        .add_system(
+            remove_resource::<ResetGameplay>
+                .run_if_resource_exists::<ResetGameplay>()
+                .after(GAMEPLAY_RESET),
         )
         // --- Gameplay teardown and exit to MainMenu ---
         .add_system_set(
@@ -85,10 +115,13 @@ fn game_setup_system(
     };
 
     commands.insert_resource(game_textures);
+}
+
+fn init_game_resource_system(mut commands: Commands) {
     commands.insert_resource(EnemyCount(0));
-    commands.insert_resource(GameRunning);
     commands.insert_resource(PlayerState::default());
     commands.insert_resource(FormationMaker::default());
+    commands.insert_resource(GameRunning);
 }
 
 fn movable_system(
@@ -279,6 +312,10 @@ fn invincibility_system(
     }
 }
 
+fn has_player_died(mut commands: Commands, player_state: Res<PlayerState>) -> bool {
+    player_state.health == 0
+}
+
 fn gameplay_to_clean_up_system(mut commands: Commands) {
     commands.remove_resource::<GameRunning>();
     commands.insert_resource(GameplayTeardown);
@@ -298,4 +335,12 @@ fn exit_gameplay_system(mut commands: Commands) {
 
 fn pause_system(mut commands: Commands) {
     commands.insert_resource(NextState(AppState::Paused));
+}
+
+fn game_over_system(mut commands: Commands) {
+    commands.insert_resource(NextState(AppState::GameOver));
+}
+
+fn remove_resource<R: Resource>(mut commands: Commands) {
+    commands.remove_resource::<R>();
 }

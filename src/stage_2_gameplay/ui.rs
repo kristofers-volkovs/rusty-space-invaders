@@ -18,7 +18,7 @@ impl Plugin for UiPlugin {
                 ConditionSet::new()
                     .run_in_state(AppState::Gameplay)
                     .with_system(heart_image_update_system)
-                    .with_system(setup_ui_system.run_if_resource_added::<PlayerState>())
+                    .with_system(setup_ui_system.run_if_resource_added::<GameRunning>())
                     .into(),
             );
     }
@@ -83,6 +83,8 @@ fn heart_image_update_system(
     for (idx, mut image) in query.iter_mut().enumerate() {
         if idx >= player_state.health {
             image.0 = ui_textures.heart_empty.clone().into();
+        } else {
+            image.0 = ui_textures.heart_full.clone().into();
         }
     }
 }
