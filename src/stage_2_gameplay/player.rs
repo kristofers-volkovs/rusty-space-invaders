@@ -3,7 +3,9 @@ use std::time::Duration;
 use bevy::prelude::*;
 use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
 
-use super::constants::{PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE};
+use super::constants::{
+    PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, PLAYER_SPAWN, SPRITE_SCALE,
+};
 use super::resources::{GameTextures, PlayerState};
 use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{
@@ -25,7 +27,7 @@ impl Plugin for PlayerPlugin {
 
         app.add_stage_before(
             CoreStage::Update,
-            "PlayerRespawn",
+            PLAYER_SPAWN,
             FixedTimestepStage::from_stage(Duration::from_secs_f32(0.5), fixedupdate),
         )
         .add_system_set(

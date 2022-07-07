@@ -23,3 +23,8 @@ pub const BASE_SPEED: f32 = 500.;
 pub const PLAYER_RESPAWN_DELAY: f64 = 2.;
 pub const ENEMY_MAX: u32 = 2;
 pub const FORMATION_MEMBERS_MAX: u32 = 2;
+
+// Labels
+
+pub const PLAYER_SPAWN: &str = "player_spawn";
+pub const ENEMY_SPAWN: &str = "enemy_spawn";
