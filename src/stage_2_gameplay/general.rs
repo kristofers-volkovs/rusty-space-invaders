@@ -1,5 +1,6 @@
 use bevy::{math::Vec3Swizzles, prelude::*, sprite::collide_aabb::collide, utils::HashSet};
-use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
+use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet, IntoConditionalSystem};
+use iyes_loopless::state::NextState;
 
 use super::components::{
     Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Invincibility,
@@ -11,6 +12,8 @@ use super::constants::{
 };
 use super::enemy::formation::FormationMaker;
 use super::resources::{EnemyCount, GameTextures, PlayerState};
+use crate::shared::components::{ExitGameButton, GameRunning, GameplayTeardown};
+use crate::shared::general::{esc_pressed, on_button_interact};
 use crate::shared::{
     constants::*,
     resources::{AppState, WinSize},
@@ -20,20 +23,36 @@ pub struct GeneralPlugin;
 
 impl Plugin for GeneralPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PlayerState>()
-            .init_resource::<FormationMaker>()
-            .add_enter_system(AppState::Gameplay, game_setup_system)
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(AppState::Gameplay)
-                    .with_system(movable_system)
-                    .with_system(player_laser_hit_enemy_system)
-                    .with_system(explosion_to_spawn_system)
-                    .with_system(explosion_animation_system)
-                    .with_system(enemy_laser_hit_player_system)
-                    .with_system(invincibility_system)
-                    .into(),
-            );
+        app.add_enter_system(
+            AppState::Gameplay,
+            game_setup_system.run_unless_resource_exists::<GameRunning>(),
+        )
+        // --- Main gameplay loop ---
+        .add_system_set(
+            ConditionSet::new()
+                .run_in_state(AppState::Gameplay)
+                .with_system(movable_system)
+                .with_system(player_laser_hit_enemy_system)
+                .with_system(explosion_to_spawn_system)
+                .with_system(explosion_animation_system)
+                .with_system(enemy_laser_hit_player_system)
+                .with_system(invincibility_system)
+                // pressing esc brings out the menu overlay
+                .with_system(pause_system.run_if(esc_pressed))
+                .into(),
+        )
+        // --- Gameplay teardown and exit to MainMenu ---
+        .add_system_set(
+            SystemSet::new()
+                .with_system(
+                    gameplay_to_clean_up_system.run_if(on_button_interact::<ExitGameButton>),
+                )
+                .with_system(
+                    teardown_system::<GameplayTeardown>
+                        .run_if_resource_exists::<GameplayTeardown>(),
+                )
+                .with_system(exit_gameplay_system.run_if_resource_removed::<GameplayTeardown>()),
+        );
     }
 }
 
@@ -67,6 +86,9 @@ fn game_setup_system(
 
     commands.insert_resource(game_textures);
     commands.insert_resource(EnemyCount(0));
+    commands.insert_resource(GameRunning);
+    commands.insert_resource(PlayerState::default());
+    commands.insert_resource(FormationMaker::default());
 }
 
 fn movable_system(
@@ -255,4 +277,25 @@ fn invincibility_system(
             sprite.color.set_a(1.);
         }
     }
+}
+
+fn gameplay_to_clean_up_system(mut commands: Commands) {
+    commands.remove_resource::<GameRunning>();
+    commands.insert_resource(GameplayTeardown);
+}
+
+fn teardown_system<T: Component>(mut commands: Commands, query: Query<Entity, Without<(Camera)>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    commands.remove_resource::<T>()
+}
+
+fn exit_gameplay_system(mut commands: Commands) {
+    commands.insert_resource(NextState(AppState::MainMenu));
+}
+
+fn pause_system(mut commands: Commands) {
+    commands.insert_resource(NextState(AppState::Paused));
 }

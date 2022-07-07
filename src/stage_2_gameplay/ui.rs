@@ -1,6 +1,9 @@
 use bevy::prelude::*;
-use iyes_loopless::prelude::{AppLooplessStateExt, ConditionSet};
+use iyes_loopless::prelude::{
+    AppLooplessStateExt, ConditionHelpers, ConditionSet, IntoConditionalSystem,
+};
 
+use crate::shared::components::GameRunning;
 use crate::shared::resources::{AppState, UiTextures, WinSize};
 use crate::stage_2_gameplay::components::HeartImage;
 use crate::stage_2_gameplay::resources::PlayerState;
@@ -9,11 +12,13 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(AppState::Gameplay, setup_ui_system)
+        app
+            // --- When player loses health then full hearts get exchanged for empty ones ---
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(AppState::Gameplay)
                     .with_system(heart_image_update_system)
+                    .with_system(setup_ui_system.run_if_resource_added::<PlayerState>())
                     .into(),
             );
     }
