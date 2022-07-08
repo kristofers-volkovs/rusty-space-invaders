@@ -15,8 +15,8 @@ use super::constants::{
 };
 use super::enemy::formation::FormationMaker;
 use super::resources::{EnemyCount, GameTextures, PlayerState};
-use crate::shared::components::{ExitGameButton, GameRunning, GameplayTeardown, ResetGameplay};
-use crate::shared::general::{despawn_system, esc_pressed, on_button_interact};
+use crate::shared::components::{GameRunning, ResetGameplay};
+use crate::shared::general::despawn_system;
 use crate::shared::{
     constants::*,
     resources::{AppState, WinSize},
@@ -42,14 +42,6 @@ impl Plugin for GeneralPlugin {
                 .with_system(explosion_animation_system)
                 .with_system(enemy_laser_hit_player_system)
                 .with_system(invincibility_system)
-                // pressing esc brings out the menu overlay
-                .with_system(pause_system.run_if(esc_pressed))
-                // when player dies the game over screen pops up
-                .with_system(
-                    game_over_system
-                        .run_if(has_player_died)
-                        .run_unless_resource_exists::<ResetGameplay>(),
-                )
                 .into(),
         )
         // --- Despawns the mobs and resets resources ---
@@ -70,18 +62,6 @@ impl Plugin for GeneralPlugin {
             remove_resource::<ResetGameplay>
                 .run_if_resource_exists::<ResetGameplay>()
                 .after(GAMEPLAY_RESET),
-        )
-        // --- Gameplay teardown and exit to MainMenu ---
-        .add_system_set(
-            SystemSet::new()
-                .with_system(
-                    gameplay_to_clean_up_system.run_if(on_button_interact::<ExitGameButton>),
-                )
-                .with_system(
-                    teardown_system::<GameplayTeardown>
-                        .run_if_resource_exists::<GameplayTeardown>(),
-                )
-                .with_system(exit_gameplay_system.run_if_resource_removed::<GameplayTeardown>()),
         );
     }
 }
@@ -310,35 +290,6 @@ fn invincibility_system(
             sprite.color.set_a(1.);
         }
     }
-}
-
-fn has_player_died(mut commands: Commands, player_state: Res<PlayerState>) -> bool {
-    player_state.health == 0
-}
-
-fn gameplay_to_clean_up_system(mut commands: Commands) {
-    commands.remove_resource::<GameRunning>();
-    commands.insert_resource(GameplayTeardown);
-}
-
-fn teardown_system<T: Component>(mut commands: Commands, query: Query<Entity, Without<(Camera)>>) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-
-    commands.remove_resource::<T>()
-}
-
-fn exit_gameplay_system(mut commands: Commands) {
-    commands.insert_resource(NextState(AppState::MainMenu));
-}
-
-fn pause_system(mut commands: Commands) {
-    commands.insert_resource(NextState(AppState::Paused));
-}
-
-fn game_over_system(mut commands: Commands) {
-    commands.insert_resource(NextState(AppState::GameOver));
 }
 
 fn remove_resource<R: Resource>(mut commands: Commands) {
