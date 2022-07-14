@@ -4,7 +4,7 @@ use iyes_loopless::prelude::{
 };
 use iyes_loopless::state::NextState;
 
-use crate::shared::components::{GameRunning, ResetGameplay, ExitGameButton, GameplayTeardown};
+use crate::shared::components::{ExitGameButton, GameRunning, GameplayTeardown, ResetGameplay};
 use crate::shared::general::{esc_pressed, on_button_interact};
 use crate::shared::resources::{AppState, UiTextures, WinSize};
 use crate::stage_2_gameplay::components::HeartImage;

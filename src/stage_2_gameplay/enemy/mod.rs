@@ -6,15 +6,23 @@ use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
 use rand::{thread_rng, Rng};
 
 use super::constants::{
-    ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, ENEMY_SPAWN, SPRITE_SCALE, TIME_STEP,
+    BASE_SPEED, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, ENEMY_SPAWN, SPRITE_SCALE, TIME_STEP,
 };
 use super::resources::{EnemyCount, GameTextures};
 use crate::shared::resources::{AppState, WinSize};
-use crate::stage_2_gameplay::components::{Enemy, FromEnemy, Laser, Movable, SpriteSize, Velocity};
+use crate::stage_2_gameplay::components::{
+    Enemy, FromEnemy, Laser, Movable, Point, SpriteSize, Velocity,
+};
 
+use self::components::{
+    EnemyBundle, EnemyMovementState, Health, MovementSpeed, SpawnRate, SpawningDirection,
+};
 use self::formation::{Formation, FormationMaker};
+use self::motion::{calculate_spawning_point, downwards_motion};
 
+pub mod components;
 pub mod formation;
+pub mod motion;
 
 pub struct EnemyPlugin;
 
@@ -47,13 +55,11 @@ fn enemy_spawn_system(
     mut commands: Commands,
     game_textures: Res<GameTextures>,
     mut enemy_count: ResMut<EnemyCount>,
-    mut formation_maker: ResMut<FormationMaker>,
     win_size: Res<WinSize>,
 ) {
     if enemy_count.0 < ENEMY_MAX {
-        // get formation and start x/y
-        let formation = formation_maker.make(&win_size);
-        let (x, y) = formation.start;
+        let starting_point = calculate_spawning_point(SpawningDirection::Top, &win_size);
+        let (x, y) = (starting_point.x, starting_point.y);
 
         commands
             .spawn_bundle(SpriteBundle {
@@ -65,8 +71,12 @@ fn enemy_spawn_system(
                 },
                 ..Default::default()
             })
+            .insert_bundle(EnemyBundle {
+                movement_speed: MovementSpeed::from(BASE_SPEED),
+                movement_state: EnemyMovementState::Downward,
+                ..Default::default()
+            })
             .insert(Enemy)
-            .insert(formation)
             .insert(SpriteSize::from(ENEMY_SIZE));
 
         enemy_count.0 += 1;
@@ -104,51 +114,40 @@ fn enemy_fire_system(
 }
 
 fn enemy_movement_system(
+    mut commands: Commands,
+    win_size: Res<WinSize>,
+    mut enemy_count: ResMut<EnemyCount>,
     time: Res<Time>,
-    mut query: Query<(&mut Transform, &mut Formation), With<Enemy>>,
+    mut query: Query<(Entity, &mut Transform, &EnemyMovementState, &MovementSpeed), With<Enemy>>,
 ) {
-    let now = time.seconds_since_startup() as f32;
-    for (mut transform, mut formation) in query.iter_mut() {
+    for (entity, mut transform, movement_state, movement_speed) in query.iter_mut() {
         // current position
-        let (x_org, y_org) = (transform.translation.x, transform.translation.y);
-
-        // max distance in 1 sec
-        let max_distance = TIME_STEP * formation.speed;
-
-        // fixtures
-        let dir: f32 = if formation.start.0 < 0. { 1. } else { -1. }; // 1 for counter clockwise and -1 clockwise
-        let (x_pivot, y_pivot) = formation.pivot;
-        let (x_radius, y_radius) = formation.radius;
-
-        // compute next angle
-        let angle = formation.angle
-            + dir * formation.speed * TIME_STEP / (x_radius.min(y_radius) * PI / 2.);
-
-        // compute target x/y
-        let x_dst = x_radius * angle.cos() + x_pivot;
-        let y_dst = y_radius * angle.sin() + y_pivot;
-
-        // compute distance
-        let dx = x_org - x_dst;
-        let dy = y_org - y_dst;
-        let distance = (dx * dx + dy * dy).sqrt();
-        let distance_ratio = if distance != 0. {
-            max_distance / distance
-        } else {
-            0.
+        let current_point = Point {
+            x: transform.translation.x,
+            y: transform.translation.y,
         };
 
-        // compute final x/y
-        let x = x_org - dx * distance_ratio;
-        let x = if dx > 0. { x.max(x_dst) } else { x.min(x_dst) };
-        let y = y_org - dy * distance_ratio;
-        let y = if dy > 0. { y.max(y_dst) } else { y.min(y_dst) };
-
-        if distance < max_distance * formation.speed / 20. {
-            formation.angle = angle;
-        }
+        let next_point: Point = match movement_state {
+            EnemyMovementState::Stationary => current_point.clone(),
+            EnemyMovementState::Downward => downwards_motion(current_point, movement_speed),
+            EnemyMovementState::Travel => current_point.clone(),
+            EnemyMovementState::Seeking => current_point.clone(),
+            EnemyMovementState::Idle => current_point.clone(),
+            EnemyMovementState::Circle => current_point.clone(),
+        };
 
         let translation = &mut transform.translation;
-        (translation.x, translation.y) = (x, y);
+        (translation.x, translation.y) = (next_point.x, next_point.y);
+
+        // TODO create a more universal way to despawn enemies when it's outside the window
+        const MARGIN: f32 = 200.;
+        if translation.y > win_size.h / 2. + MARGIN
+            || translation.y < -win_size.h / 2. - MARGIN
+            || translation.x > win_size.w / 2. + MARGIN
+            || translation.x < -win_size.w / 2. - MARGIN
+        {
+            commands.entity(entity).despawn();
+            enemy_count.0 -= 1;
+        }
     }
 }
