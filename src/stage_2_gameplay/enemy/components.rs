@@ -9,65 +9,46 @@ pub struct Enemy;
 pub struct FromEnemy;
 
 
+#[derive(Debug, Clone, Component)]
+pub struct Formation {
+    pub radius: (f32, f32),
+    pub pivot: Point,
+    pub start: Point,
+}
+
 #[derive(Component, Clone, Debug)]
 pub enum EnemyMovementState {
     Stationary,
     Downward,
-    Travel,
+    Travel(Point),
     Seeking,
-    Idle,
-    Circle,
+    Circle(Formation),
 }
 
 impl Default for EnemyMovementState {
     fn default() -> Self {
-        EnemyMovementState::Idle
+        EnemyMovementState::Stationary
     }
 }
 
 #[derive(Component, Clone, Debug, Default)]
-pub struct Health(pub usize);
-
-impl From<usize> for Health {
-    fn from(val: usize) -> Self {
-        Health(val)
-    }
+pub struct EnemyMovement {
+    pub speed: f32,
+    pub angle: f32,
+    pub state: EnemyMovementState,
 }
 
 #[derive(Component, Clone, Debug, Default)]
-pub struct SpawnRate(pub f32);
-
-impl From<f32> for SpawnRate {
-    fn from(val: f32) -> Self {
-        SpawnRate(val)
-    }
-}
-
-#[derive(Component, Clone, Debug, Default)]
-pub struct FiringRate(pub f32);
-
-impl From<f32> for FiringRate {
-    fn from(val: f32) -> Self {
-        FiringRate(val)
-    }
-}
-
-#[derive(Component, Clone, Debug, Default)]
-pub struct MovementSpeed(pub f32);
-
-impl From<f32> for MovementSpeed {
-    fn from(val: f32) -> Self {
-        MovementSpeed(val)
-    }
+pub struct EnemyStats {
+    pub health: usize,
+    pub spawn_rate: f32,  // from 0 to 1
+    pub firing_rate: f32, // from 0 to 1
 }
 
 #[derive(Bundle, Default, Clone, Debug)]
 pub struct EnemyBundle {
-    pub health: Health,
-    pub spawn_rate: SpawnRate,   // from 0 to 1
-    pub firing_rate: FiringRate, // from 0 to 1
-    pub movement_speed: MovementSpeed,
-    pub movement_state: EnemyMovementState,
+    pub stats: EnemyStats,
+    pub movement: EnemyMovement,
 }
 
 pub enum SpawningDirection {

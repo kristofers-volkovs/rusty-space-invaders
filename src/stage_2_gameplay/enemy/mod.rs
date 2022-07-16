@@ -13,10 +13,10 @@ use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{Laser, Movable, Point, SpriteSize, Velocity};
 
 use self::components::{
-    EnemyBundle, EnemyMovementState, Health, MovementSpeed, SpawnRate, SpawningDirection,
+    Enemy, EnemyBundle, EnemyCount, EnemyMovement, EnemyMovementState, FromEnemy, SpawningDirection,
 };
 use self::formation::{Formation, FormationMaker};
-use self::motion::{calculate_spawning_point, downwards_motion};
+use self::motion::{calculate_spawning_point, enemy_movement_system};
 
 pub mod components;
 pub mod formation;
@@ -55,7 +55,7 @@ fn enemy_spawn_system(
     mut enemy_count: ResMut<EnemyCount>,
     win_size: Res<WinSize>,
 ) {
-    if enemy_count.0 < ENEMY_MAX {
+    if enemy_count.asteroids < ENEMY_MAX {
         let starting_point = calculate_spawning_point(SpawningDirection::Top, &win_size);
         let (x, y) = (starting_point.x, starting_point.y);
 
@@ -70,8 +70,11 @@ fn enemy_spawn_system(
                 ..Default::default()
             })
             .insert_bundle(EnemyBundle {
-                movement_speed: MovementSpeed::from(BASE_SPEED),
-                movement_state: EnemyMovementState::Downward,
+                movement: EnemyMovement {
+                    speed: BASE_SPEED,
+                    state: EnemyMovementState::Downward,
+                    angle: 0.
+                },
                 ..Default::default()
             })
             .insert(Enemy)
@@ -107,45 +110,6 @@ fn enemy_fire_system(
                 .insert(FromEnemy)
                 .insert(Movable { auto_despawn: true })
                 .insert(Velocity { x: 0., y: -1. });
-        }
-    }
-}
-
-fn enemy_movement_system(
-    mut commands: Commands,
-    win_size: Res<WinSize>,
-    mut enemy_count: ResMut<EnemyCount>,
-    time: Res<Time>,
-    mut query: Query<(Entity, &mut Transform, &EnemyMovementState, &MovementSpeed), With<Enemy>>,
-) {
-    for (entity, mut transform, movement_state, movement_speed) in query.iter_mut() {
-        // current position
-        let current_point = Point {
-            x: transform.translation.x,
-            y: transform.translation.y,
-        };
-
-        let next_point: Point = match movement_state {
-            EnemyMovementState::Stationary => current_point.clone(),
-            EnemyMovementState::Downward => downwards_motion(current_point, movement_speed),
-            EnemyMovementState::Travel => current_point.clone(),
-            EnemyMovementState::Seeking => current_point.clone(),
-            EnemyMovementState::Idle => current_point.clone(),
-            EnemyMovementState::Circle => current_point.clone(),
-        };
-
-        let translation = &mut transform.translation;
-        (translation.x, translation.y) = (next_point.x, next_point.y);
-
-        // TODO create a more universal way to despawn enemies when it's outside the window
-        const MARGIN: f32 = 200.;
-        if translation.y > win_size.h / 2. + MARGIN
-            || translation.y < -win_size.h / 2. - MARGIN
-            || translation.x > win_size.w / 2. + MARGIN
-            || translation.x < -win_size.w / 2. - MARGIN
-        {
-            commands.entity(entity).despawn();
-            enemy_count.0 -= 1;
         }
     }
 }
