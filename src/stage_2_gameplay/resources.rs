@@ -10,8 +10,6 @@ pub struct GameTextures {
     pub explosion: Handle<TextureAtlas>,
 }
 
-pub struct EnemyCount(pub u32);
-
 pub struct PlayerState {
     pub on: bool,       // alive
     pub last_shot: f64, // last time died, -1 if not shot

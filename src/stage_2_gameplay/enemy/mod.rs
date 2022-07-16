@@ -8,11 +8,9 @@ use rand::{thread_rng, Rng};
 use super::constants::{
     BASE_SPEED, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, ENEMY_SPAWN, SPRITE_SCALE, TIME_STEP,
 };
-use super::resources::{EnemyCount, GameTextures};
+use super::resources::GameTextures;
 use crate::shared::resources::{AppState, WinSize};
-use crate::stage_2_gameplay::components::{
-    Enemy, FromEnemy, Laser, Movable, Point, SpriteSize, Velocity,
-};
+use crate::stage_2_gameplay::components::{Laser, Movable, Point, SpriteSize, Velocity};
 
 use self::components::{
     EnemyBundle, EnemyMovementState, Health, MovementSpeed, SpawnRate, SpawningDirection,

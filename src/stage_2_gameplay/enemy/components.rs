@@ -1,5 +1,13 @@
 use bevy::prelude::*;
 
+use crate::stage_2_gameplay::components::Point;
+
+#[derive(Component)]
+pub struct Enemy;
+
+#[derive(Component)]
+pub struct FromEnemy;
+
 
 #[derive(Component, Clone, Debug)]
 pub enum EnemyMovementState {
@@ -65,4 +73,18 @@ pub struct EnemyBundle {
 pub enum SpawningDirection {
     Top,
     Sides,
+}
+
+pub struct EnemyCount {
+    pub asteroids: u32,
+    pub minions: u32,
+}
+
+impl Default for EnemyCount {
+    fn default() -> Self {
+        EnemyCount {
+            asteroids: 0,
+            minions: 0,
+        }
+    }
 }

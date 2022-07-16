@@ -6,15 +6,16 @@ use iyes_loopless::prelude::{
 use iyes_loopless::state::NextState;
 
 use super::components::{
-    Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Invincibility,
-    InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
+    Explosion, ExplosionTimer, ExplosionToSpawn, FromPlayer, Invincibility, InvincibilityTimer,
+    Laser, Movable, Player, SpriteSize, Velocity,
 };
 use super::constants::{
     BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE, EXPLOSION_LEN, EXPLOSION_SHEET, GAMEPLAY_RESET,
     PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
 };
+use super::enemy::components::{Enemy, EnemyCount, FromEnemy};
 use super::enemy::formation::FormationMaker;
-use super::resources::{EnemyCount, GameTextures, PlayerState};
+use super::resources::{GameTextures, PlayerState};
 use crate::shared::components::{GameRunning, ResetGameplay};
 use crate::shared::general::despawn_system;
 use crate::shared::{
@@ -98,7 +99,7 @@ fn game_setup_system(
 }
 
 fn init_game_resource_system(mut commands: Commands) {
-    commands.insert_resource(EnemyCount(0));
+    commands.insert_resource(EnemyCount::default());
     commands.insert_resource(PlayerState::default());
     commands.insert_resource(FormationMaker::default());
     commands.insert_resource(GameRunning);
@@ -165,7 +166,8 @@ fn player_laser_hit_enemy_system(
                 // remove enemy
                 commands.entity(enemy_entity).despawn();
                 despawn_entities.insert(enemy_entity);
-                enemy_count.0 -= 1;
+                enemy_count.asteroids -= 1;
+                // TODO fire out an event that tells that a specific entity needs to despawn
 
                 // remove laser
                 commands.entity(laser_entity).despawn();

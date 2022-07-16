@@ -70,14 +70,6 @@ pub struct Player;
 #[derive(Component)]
 pub struct FromPlayer;
 
-// Enemy Components
-
-#[derive(Component)]
-pub struct Enemy;
-
-#[derive(Component)]
-pub struct FromEnemy;
-
 // Explosion Components
 
 #[derive(Component)]
