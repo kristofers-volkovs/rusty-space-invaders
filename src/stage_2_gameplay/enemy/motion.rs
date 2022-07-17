@@ -5,10 +5,12 @@ use rand::{thread_rng, Rng};
 
 use crate::{
     shared::resources::WinSize,
-    stage_2_gameplay::{components::Point, constants::TIME_STEP, enemy::components::EnemyMovementState},
+    stage_2_gameplay::{
+        components::Point, constants::TIME_STEP, enemy::components::EnemyMovementState,
+    },
 };
 
-use super::components::{SpawningDirection, EnemyCount, EnemyMovement, Enemy};
+use super::components::{Enemy, EnemyCount, EnemyMovement, SpawningDirection};
 
 pub fn calculate_spawning_point(spawn_direction: SpawningDirection, win_size: &WinSize) -> Point {
     let mut rng = thread_rng();
@@ -30,7 +32,6 @@ pub fn calculate_spawning_point(spawn_direction: SpawningDirection, win_size: &W
         }
     }
 }
-
 
 pub fn enemy_movement_system(
     mut commands: Commands,
@@ -79,7 +80,7 @@ pub fn enemy_movement_system(
             EnemyMovementState::Seeking => Point { x: x_org, y: y_org },
             EnemyMovementState::Circle(formation) => {
                 // max distance in 1 sec
-                let max_distance = (TIME_STEP / 4.) * movement.speed;
+                let max_distance = TIME_STEP * movement.speed;
 
                 // fixtures
                 let dir: f32 = if formation.start.x < 0. { 1. } else { -1. }; // 1 for counter clockwise and -1 clockwise
@@ -115,7 +116,7 @@ pub fn enemy_movement_system(
                 }
 
                 Point { x, y }
-            },
+            }
         };
 
         let translation = &mut transform.translation;
@@ -133,4 +134,3 @@ pub fn enemy_movement_system(
         }
     }
 }
-
