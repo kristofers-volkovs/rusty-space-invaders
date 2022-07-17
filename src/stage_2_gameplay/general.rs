@@ -6,8 +6,8 @@ use iyes_loopless::prelude::{
 use iyes_loopless::state::NextState;
 
 use super::components::{
-    Explosion, ExplosionTimer, ExplosionToSpawn, FromPlayer, Invincibility, InvincibilityTimer,
-    Laser, Movable, Player, SpriteSize, Velocity,
+    DespawnEntity, EntityType, Explosion, ExplosionTimer, ExplosionToSpawn, FromPlayer,
+    Invincibility, InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
 };
 use super::constants::{
     BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE, EXPLOSION_LEN, EXPLOSION_SHEET, GAMEPLAY_RESET,
@@ -27,43 +27,47 @@ pub struct GeneralPlugin;
 
 impl Plugin for GeneralPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system_set(
-            AppState::Gameplay,
-            SystemSet::new()
-                .with_system(game_setup_system.run_unless_resource_exists::<GameRunning>())
-                .with_system(init_game_resource_system.run_unless_resource_exists::<GameRunning>()),
-        )
-        // --- Main gameplay loop ---
-        .add_system_set(
-            ConditionSet::new()
-                .run_in_state(AppState::Gameplay)
-                .with_system(movable_system)
-                .with_system(player_laser_hit_enemy_system)
-                .with_system(explosion_to_spawn_system)
-                .with_system(explosion_animation_system)
-                .with_system(enemy_laser_hit_player_system)
-                .with_system(invincibility_system)
-                .into(),
-        )
-        // --- Despawns the mobs and resets resources ---
-        .add_system_set(
-            ConditionSet::new()
-                .run_in_state(AppState::Gameplay)
-                .run_if_resource_exists::<ResetGameplay>()
-                .label(GAMEPLAY_RESET)
-                // Despawns everyone on the board
-                .with_system(despawn_system::<Enemy>)
-                .with_system(despawn_system::<Player>)
-                .with_system(despawn_system::<Laser>)
-                // Reinitiates resources
-                .with_system(init_game_resource_system)
-                .into(),
-        )
-        .add_system(
-            remove_resource::<ResetGameplay>
-                .run_if_resource_exists::<ResetGameplay>()
-                .after(GAMEPLAY_RESET),
-        );
+        app.add_event::<DespawnEntity>()
+            .add_enter_system_set(
+                AppState::Gameplay,
+                SystemSet::new()
+                    .with_system(game_setup_system.run_unless_resource_exists::<GameRunning>())
+                    .with_system(
+                        init_game_resource_system.run_unless_resource_exists::<GameRunning>(),
+                    ),
+            )
+            // --- Main gameplay loop ---
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(AppState::Gameplay)
+                    .with_system(movable_system)
+                    .with_system(player_laser_hit_enemy_system)
+                    .with_system(explosion_to_spawn_system)
+                    .with_system(explosion_animation_system)
+                    .with_system(enemy_laser_hit_player_system)
+                    .with_system(invincibility_system)
+                    .with_system(entity_despawn_system)
+                    .into(),
+            )
+            // --- Despawns the mobs and resets resources ---
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(AppState::Gameplay)
+                    .run_if_resource_exists::<ResetGameplay>()
+                    .label(GAMEPLAY_RESET)
+                    // Despawns everyone on the board
+                    .with_system(despawn_system::<Enemy>)
+                    .with_system(despawn_system::<Player>)
+                    .with_system(despawn_system::<Laser>)
+                    // Reinitiates resources
+                    .with_system(init_game_resource_system)
+                    .into(),
+            )
+            .add_system(
+                remove_resource::<ResetGameplay>
+                    .run_if_resource_exists::<ResetGameplay>()
+                    .after(GAMEPLAY_RESET),
+            );
     }
 }
 
@@ -128,11 +132,31 @@ fn movable_system(
     }
 }
 
+fn entity_despawn_system(
+    mut commands: Commands,
+    mut ev_despawn: EventReader<DespawnEntity>,
+    mut enemy_count: ResMut<EnemyCount>,
+) {
+    for ev in ev_despawn.iter() {
+        match ev.entity_type {
+            EntityType::Asteroid => {
+                enemy_count.asteroids -= 1;
+            }
+            EntityType::Minion => {
+                enemy_count.minions -= 1;
+            }
+            _ => {}
+        }
+        commands.entity(ev.entity).despawn();
+    }
+}
+
 fn player_laser_hit_enemy_system(
     mut commands: Commands,
     mut enemy_count: ResMut<EnemyCount>,
+    mut ev_despawn: EventWriter<DespawnEntity>,
     laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromPlayer>)>,
-    enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>,
+    enemy_query: Query<(Entity, &Transform, &SpriteSize, &EntityType), With<Enemy>>,
 ) {
     let mut despawn_entities: HashSet<Entity> = HashSet::new();
 
@@ -145,7 +169,7 @@ fn player_laser_hit_enemy_system(
         let laser_scale = Vec2::from(laser_tf.scale.xy());
 
         // iterate over enemies
-        for (enemy_entity, enemy_tf, enemy_size) in enemy_query.iter() {
+        for (enemy_entity, enemy_tf, enemy_size, enemy_type) in enemy_query.iter() {
             if despawn_entities.contains(&enemy_entity) || despawn_entities.contains(&laser_entity)
             {
                 continue;
@@ -164,10 +188,11 @@ fn player_laser_hit_enemy_system(
             // perform collision
             if let Some(_) = collision {
                 // remove enemy
-                commands.entity(enemy_entity).despawn();
+                ev_despawn.send(DespawnEntity {
+                    entity: enemy_entity,
+                    entity_type: enemy_type.clone(),
+                });
                 despawn_entities.insert(enemy_entity);
-                enemy_count.asteroids -= 1;
-                // TODO fire out an event that tells that a specific entity needs to despawn
 
                 // remove laser
                 commands.entity(laser_entity).despawn();

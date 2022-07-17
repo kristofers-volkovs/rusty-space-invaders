@@ -1,7 +1,7 @@
 use bevy::{
     core::Timer,
     math::{Vec2, Vec3},
-    prelude::Component,
+    prelude::{Component, Entity},
 };
 
 // Common Components
@@ -62,6 +62,19 @@ impl Default for FiringCooldownTimer {
     }
 }
 
+#[derive(Component, Clone, Debug)]
+pub enum EntityType {
+    Player,
+    Asteroid,
+    Minion,
+}
+
+impl Default for EntityType {
+    fn default() -> Self {
+        EntityType::Player
+    }
+}
+
 // Player Components
 
 #[derive(Component)]
@@ -91,3 +104,10 @@ impl Default for ExplosionTimer {
 
 #[derive(Component)]
 pub struct HeartImage;
+
+// Events
+
+pub struct DespawnEntity {
+    pub entity: Entity,
+    pub entity_type: EntityType,
+}

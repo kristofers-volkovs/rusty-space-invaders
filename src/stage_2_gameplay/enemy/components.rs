@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::stage_2_gameplay::components::Point;
+use crate::stage_2_gameplay::components::{EntityType, Point};
 
 #[derive(Component)]
 pub struct Enemy;
@@ -8,13 +8,35 @@ pub struct Enemy;
 #[derive(Component)]
 pub struct FromEnemy;
 
-
-#[derive(Debug, Clone, Component)]
-pub struct Formation {
-    pub radius: (f32, f32),
-    pub pivot: Point,
-    pub start: Point,
+pub struct EnemyCount {
+    pub asteroids: u32,
+    pub minions: u32,
 }
+
+impl Default for EnemyCount {
+    fn default() -> Self {
+        EnemyCount {
+            asteroids: 0,
+            minions: 0,
+        }
+    }
+}
+
+pub enum SpawningDirection {
+    Top,
+    Sides,
+}
+
+// Bundles
+
+#[derive(Bundle, Default, Clone, Debug)]
+pub struct EnemyBundle {
+    pub stats: EnemyStats,
+    pub movement: EnemyMovement,
+    pub enemy_type: EntityType,
+}
+
+// Motion components
 
 #[derive(Component, Clone, Debug)]
 pub enum EnemyMovementState {
@@ -38,6 +60,15 @@ pub struct EnemyMovement {
     pub state: EnemyMovementState,
 }
 
+#[derive(Debug, Clone, Component)]
+pub struct Formation {
+    pub radius: (f32, f32),
+    pub pivot: Point,
+    pub start: Point,
+}
+
+// Stat components
+
 #[derive(Component, Clone, Debug, Default)]
 pub struct EnemyStats {
     pub health: usize,
@@ -45,27 +76,3 @@ pub struct EnemyStats {
     pub firing_rate: f32, // from 0 to 1
 }
 
-#[derive(Bundle, Default, Clone, Debug)]
-pub struct EnemyBundle {
-    pub stats: EnemyStats,
-    pub movement: EnemyMovement,
-}
-
-pub enum SpawningDirection {
-    Top,
-    Sides,
-}
-
-pub struct EnemyCount {
-    pub asteroids: u32,
-    pub minions: u32,
-}
-
-impl Default for EnemyCount {
-    fn default() -> Self {
-        EnemyCount {
-            asteroids: 0,
-            minions: 0,
-        }
-    }
-}
