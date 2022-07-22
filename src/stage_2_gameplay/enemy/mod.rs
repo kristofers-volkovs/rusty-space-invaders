@@ -14,8 +14,8 @@ use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{Laser, Movable, Point, SpriteSize, Velocity};
 
 use self::components::{
-    Enemy, EnemyBundle, EnemyCount, EnemyMovement, EnemyMovementState,
-    EnemyStats, Formation, FromEnemy, SpawningDirection,
+    Enemy, EnemyBundle, EnemyCount, EnemyMovement, EnemyMovementState, EnemyStats, Formation,
+    FromEnemy, SpawningDirection,
 };
 use self::motion::{calculate_spawning_point, enemy_movement_system};
 

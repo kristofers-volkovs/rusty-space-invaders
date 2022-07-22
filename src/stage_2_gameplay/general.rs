@@ -166,7 +166,7 @@ fn player_laser_hit_enemy_system(
             continue;
         }
 
-        let laser_scale = Vec2::from(laser_tf.scale.xy());
+        let laser_scale = laser_tf.scale.xy();
 
         // iterate over enemies
         for (enemy_entity, enemy_tf, enemy_size, enemy_type) in enemy_query.iter() {
@@ -175,7 +175,7 @@ fn player_laser_hit_enemy_system(
                 continue;
             }
 
-            let enemy_scale = Vec2::from(enemy_tf.scale.xy());
+            let enemy_scale = enemy_tf.scale.xy();
 
             // determine if laser and enemy collides
             let collision = collide(
@@ -186,7 +186,7 @@ fn player_laser_hit_enemy_system(
             );
 
             // perform collision
-            if let Some(_) = collision {
+            if collision.is_some() {
                 // remove enemy
                 ev_despawn.send(DespawnEntity {
                     entity: enemy_entity,
@@ -201,7 +201,7 @@ fn player_laser_hit_enemy_system(
                 // spawn the ExplosionToSpawn
                 commands
                     .spawn()
-                    .insert(ExplosionToSpawn(enemy_tf.translation.clone()));
+                    .insert(ExplosionToSpawn(enemy_tf.translation));
             }
         }
     }
@@ -215,10 +215,10 @@ fn enemy_laser_hit_player_system(
     player_query: Query<(Entity, &Transform, &SpriteSize), (With<Player>, Without<Invincibility>)>,
 ) {
     if let Ok((player_entity, player_tf, player_size)) = player_query.get_single() {
-        let player_scale = Vec2::from(player_tf.scale.xy());
+        let player_scale = player_tf.scale.xy();
 
         for (laser_entity, laser_tf, laser_size) in laser_query.iter() {
-            let laser_scale = Vec2::from(laser_tf.scale.xy());
+            let laser_scale = laser_tf.scale.xy();
 
             // determine if collided
             let collision = collide(
@@ -229,7 +229,7 @@ fn enemy_laser_hit_player_system(
             );
 
             // perform collision
-            if let Some(_) = collision {
+            if collision.is_some() {
                 commands.entity(player_entity).despawn();
                 player_state.shot(time.seconds_since_startup());
 
@@ -239,7 +239,7 @@ fn enemy_laser_hit_player_system(
                 // spawn the explosionToSpawn
                 commands
                     .spawn()
-                    .insert(ExplosionToSpawn(player_tf.translation.clone()));
+                    .insert(ExplosionToSpawn(player_tf.translation));
 
                 break;
             }

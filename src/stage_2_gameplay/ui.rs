@@ -109,9 +109,9 @@ fn heart_image_update_system(
 ) {
     for (idx, mut image) in query.iter_mut().enumerate() {
         if idx >= player_state.health {
-            image.0 = ui_textures.heart_empty.clone().into();
+            image.0 = ui_textures.heart_empty.clone();
         } else {
-            image.0 = ui_textures.heart_full.clone().into();
+            image.0 = ui_textures.heart_full.clone();
         }
     }
 }

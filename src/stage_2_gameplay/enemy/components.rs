@@ -75,4 +75,3 @@ pub struct EnemyStats {
     pub spawn_rate: f32,  // from 0 to 1
     pub firing_rate: f32, // from 0 to 1
 }
-
