@@ -5,9 +5,6 @@ use crate::stage_2_gameplay::components::{EntityType, Point};
 #[derive(Component)]
 pub struct Enemy;
 
-#[derive(Component)]
-pub struct FromEnemy;
-
 pub struct EnemyCount {
     pub asteroids: u32,
     pub minions: u32,
@@ -35,6 +32,14 @@ pub struct EnemyBundle {
     pub movement: EnemyMovement,
     pub enemy_type: EntityType,
 }
+
+// Type components
+
+#[derive(Component)]
+pub struct Asteroid;
+
+#[derive(Component)]
+pub struct Minion;
 
 // Motion components
 

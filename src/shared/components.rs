@@ -11,6 +11,9 @@ pub struct GameplayTeardown;
 #[derive(Component)]
 pub struct ResetGameplay;
 
+#[derive(Component)]
+pub struct SpawnPlayer;
+
 // Ui components
 
 #[derive(Component)]

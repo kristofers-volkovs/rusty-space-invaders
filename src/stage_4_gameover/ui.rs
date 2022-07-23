@@ -5,7 +5,7 @@ use iyes_loopless::{
 };
 
 use crate::shared::{
-    components::{ExitGameButton, GameRunning, ResetGameplay},
+    components::{ExitGameButton, GameRunning, ResetGameplay, SpawnPlayer},
     constants::NORMAL_BUTTON,
     general::{button_color_system, despawn_system, on_button_interact},
     resources::{AppState, UiTextures},
@@ -163,4 +163,5 @@ fn setup_gameover_system(mut commands: Commands, ui_textures: Res<UiTextures>) {
 fn respawn_system(mut commands: Commands) {
     commands.insert_resource(ResetGameplay);
     commands.insert_resource(NextState(AppState::Gameplay));
+    commands.insert_resource(SpawnPlayer);
 }

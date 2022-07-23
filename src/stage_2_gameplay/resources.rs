@@ -11,8 +11,6 @@ pub struct GameTextures {
 }
 
 pub struct PlayerState {
-    pub on: bool,       // alive
-    pub last_shot: f64, // last time died, -1 if not shot
     pub max_health: usize,
     pub health: usize,
 }
@@ -20,8 +18,6 @@ pub struct PlayerState {
 impl Default for PlayerState {
     fn default() -> Self {
         Self {
-            on: false,
-            last_shot: -1.,
             health: 3,
             max_health: 3,
         }
@@ -29,14 +25,7 @@ impl Default for PlayerState {
 }
 
 impl PlayerState {
-    pub fn shot(&mut self, time: f64) {
-        self.on = false;
-        self.last_shot = time;
+    pub fn shot(&mut self) {
         self.health -= 1;
-    }
-
-    pub fn spawned(&mut self) {
-        self.on = true;
-        self.last_shot = -1.;
     }
 }

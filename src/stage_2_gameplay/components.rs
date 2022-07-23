@@ -72,13 +72,22 @@ impl Default for EntityType {
     }
 }
 
+#[derive(Component)]
+pub struct IsHittable;
+
+#[derive(Component)]
+pub struct IsHit;
+
+#[derive(Component, Clone, Debug)]
+pub enum FromEntity {
+    FromPlayer,
+    FromEnemy,
+}
+
 // Player Components
 
 #[derive(Component)]
 pub struct Player;
-
-#[derive(Component)]
-pub struct FromPlayer;
 
 // Explosion Components
 

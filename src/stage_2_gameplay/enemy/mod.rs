@@ -2,25 +2,28 @@ use std::f32::consts::PI;
 use std::time::Duration;
 
 use bevy::prelude::*;
-use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
+use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage, IntoConditionalSystem};
 use rand::{thread_rng, Rng};
 
-use super::components::EntityType;
+use super::components::{DespawnEntity, EntityType, ExplosionToSpawn, IsHit, IsHittable};
 use super::constants::{
-    BASE_SPEED, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, ENEMY_SPAWN, SPRITE_SCALE,
+    BASE_SPEED, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, ENEMY_SPAWN, HIT_DETECTION,
+    HIT_PROCESSING, SPRITE_SCALE,
 };
 use super::resources::GameTextures;
 use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{Laser, Movable, Point, SpriteSize, Velocity};
 
 use self::components::{
-    Enemy, EnemyBundle, EnemyCount, EnemyMovement, EnemyMovementState, EnemyStats, Formation,
-    FromEnemy, SpawningDirection,
+    Asteroid, Enemy, EnemyBundle, EnemyCount, EnemyMovement, EnemyMovementState, EnemyStats,
+    Formation, Minion, SpawningDirection,
 };
+use self::minion::minion_fire_system;
 use self::motion::{calculate_spawning_point, enemy_movement_system};
 
 pub mod components;
 pub mod formation;
+pub mod minion;
 pub mod motion;
 
 pub struct EnemyPlugin;
@@ -35,18 +38,25 @@ impl Plugin for EnemyPlugin {
                 .into(),
         );
 
-        app.add_stage_before(
-            CoreStage::Update,
-            ENEMY_SPAWN,
-            FixedTimestepStage::from_stage(Duration::from_secs_f32(0.5), fixedupdate),
-        )
-        .add_system_set(
-            ConditionSet::new()
-                .run_in_state(AppState::Gameplay)
-                .with_system(enemy_movement_system)
-                .with_system(enemy_fire_system)
-                .into(),
-        );
+        app
+            .add_stage_before(
+                CoreStage::Update,
+                ENEMY_SPAWN,
+                FixedTimestepStage::from_stage(Duration::from_secs_f32(0.5), fixedupdate),
+            )
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(AppState::Gameplay)
+                    .with_system(enemy_movement_system)
+                    .with_system(minion_fire_system)
+                    .into(),
+            )
+            .add_system(
+                enemy_hit_system
+                    .run_in_state(AppState::Gameplay)
+                    .label(HIT_PROCESSING)
+                    .after(HIT_DETECTION),
+            );
     }
 }
 
@@ -84,6 +94,8 @@ fn enemy_spawn_system(
                 enemy_type: EntityType::Asteroid,
             })
             .insert(Enemy)
+            .insert(Asteroid)
+            .insert(IsHittable)
             .insert(SpriteSize::from(ENEMY_SIZE));
 
         enemy_count.asteroids += 1;
@@ -131,45 +143,45 @@ fn enemy_spawn_system(
                     angle,
                 },
                 stats: EnemyStats {
-                    health: 1,
+                    health: 3,
                     firing_rate: 1.,
                     spawn_rate: 1.,
                 },
                 enemy_type: EntityType::Minion,
             })
             .insert(Enemy)
+            .insert(Minion)
+            .insert(IsHittable)
             .insert(SpriteSize::from(ENEMY_SIZE));
 
         enemy_count.minions += 1;
     }
 }
 
-fn enemy_fire_system(
+fn enemy_hit_system(
     mut commands: Commands,
-    game_textures: Res<GameTextures>,
-    enemy_query: Query<&Transform, With<Enemy>>,
+    mut ev_despawn: EventWriter<DespawnEntity>,
+    mut query: Query<
+        (Entity, &Transform, &mut EnemyStats, &EntityType),
+        (With<Enemy>, With<IsHit>),
+    >,
 ) {
-    for &tf in enemy_query.iter() {
-        if thread_rng().gen_bool(1. / 60.) {
-            let (x, y) = (tf.translation.x, tf.translation.y);
+    for (entity, entity_tf, mut entity_stats, entity_type) in query.iter_mut() {
+        if entity_stats.health != 0 {
+            entity_stats.health -= 1;
+        }
 
-            // spawn enemy laser
+        if entity_stats.health == 0 {
+            ev_despawn.send(DespawnEntity {
+                entity: entity,
+                entity_type: entity_type.clone(),
+            });
+
             commands
-                .spawn_bundle(SpriteBundle {
-                    texture: game_textures.enemy_laser.clone(),
-                    transform: Transform {
-                        translation: Vec3::new(x, y - 15., 0.),
-                        rotation: Quat::from_rotation_x(PI),
-                        scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                })
-                .insert(Laser)
-                .insert(SpriteSize::from(ENEMY_LASER_SIZE))
-                .insert(FromEnemy)
-                .insert(Movable { auto_despawn: true })
-                .insert(Velocity { x: 0., y: -1. });
+                .spawn()
+                .insert(ExplosionToSpawn(entity_tf.translation));
+        } else {
+            commands.entity(entity).remove::<IsHit>();
         }
     }
 }

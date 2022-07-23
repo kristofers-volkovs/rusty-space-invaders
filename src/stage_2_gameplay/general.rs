@@ -6,17 +6,17 @@ use iyes_loopless::prelude::{
 use iyes_loopless::state::NextState;
 
 use super::components::{
-    DespawnEntity, EntityType, Explosion, ExplosionTimer, ExplosionToSpawn, FromPlayer,
-    Invincibility, Laser, Movable, Player, SpriteSize, Velocity,
+    DespawnEntity, EntityType, Explosion, ExplosionTimer, ExplosionToSpawn, FromEntity,
+    Invincibility, IsHit, IsHittable, Laser, Movable, Player, SpriteSize, Velocity,
 };
 use super::constants::{
     BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE, EXPLOSION_LEN, EXPLOSION_SHEET, GAMEPLAY_RESET,
-    PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
+    HIT_DETECTION, HIT_PROCESSING, PLAYER_LASER_SPRITE, PLAYER_SPRITE, TIME_STEP,
 };
-use super::enemy::components::{Enemy, EnemyCount, FromEnemy};
+use super::enemy::components::{Enemy, EnemyCount};
 use super::enemy::formation::FormationMaker;
 use super::resources::{GameTextures, PlayerState};
-use crate::shared::components::{GameRunning, ResetGameplay};
+use crate::shared::components::{GameRunning, ResetGameplay, SpawnPlayer};
 use crate::shared::general::despawn_system;
 use crate::shared::{
     constants::*,
@@ -41,13 +41,20 @@ impl Plugin for GeneralPlugin {
                 ConditionSet::new()
                     .run_in_state(AppState::Gameplay)
                     .with_system(movable_system)
-                    .with_system(player_laser_hit_enemy_system)
                     .with_system(explosion_to_spawn_system)
                     .with_system(explosion_animation_system)
-                    .with_system(enemy_laser_hit_player_system)
                     .with_system(invincibility_system)
-                    .with_system(entity_despawn_system)
                     .into(),
+            )
+            .add_system(
+                laser_hit_system
+                    .run_in_state(AppState::Gameplay)
+                    .label(HIT_DETECTION),
+            )
+            .add_system(
+                entity_despawn_system
+                    .run_in_state(AppState::Gameplay)
+                    .after(HIT_PROCESSING),
             )
             // --- Despawns the mobs and resets resources ---
             .add_system_set(
@@ -100,12 +107,12 @@ fn game_setup_system(
     };
 
     commands.insert_resource(game_textures);
+    commands.insert_resource(SpawnPlayer);
 }
 
 fn init_game_resource_system(mut commands: Commands) {
     commands.insert_resource(EnemyCount::default());
     commands.insert_resource(PlayerState::default());
-    commands.insert_resource(FormationMaker::default());
     commands.insert_resource(GameRunning);
 }
 
@@ -138,6 +145,8 @@ fn entity_despawn_system(
     mut enemy_count: ResMut<EnemyCount>,
 ) {
     for ev in ev_despawn.iter() {
+        commands.entity(ev.entity).despawn();
+
         match ev.entity_type {
             EntityType::Asteroid => {
                 enemy_count.asteroids -= 1;
@@ -147,99 +156,65 @@ fn entity_despawn_system(
             }
             _ => {}
         }
-        commands.entity(ev.entity).despawn();
     }
 }
 
-fn player_laser_hit_enemy_system(
+fn laser_hit_system(
     mut commands: Commands,
-    mut enemy_count: ResMut<EnemyCount>,
-    mut ev_despawn: EventWriter<DespawnEntity>,
-    laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromPlayer>)>,
-    enemy_query: Query<(Entity, &Transform, &SpriteSize, &EntityType), With<Enemy>>,
+    laser_query: Query<(Entity, &Transform, &SpriteSize, &FromEntity), With<Laser>>,
+    entity_query: Query<
+        (Entity, &Transform, &SpriteSize, &EntityType),
+        (With<IsHittable>, Without<Invincibility>),
+    >,
 ) {
-    let mut despawn_entities: HashSet<Entity> = HashSet::new();
+    let mut processed_entities: HashSet<Entity> = HashSet::new();
 
-    // iterate over lasers
-    for (laser_entity, laser_tf, laser_size) in laser_query.iter() {
-        if despawn_entities.contains(&laser_entity) {
+    for (entity, entity_tf, entity_size, entity_type) in entity_query.iter() {
+        if processed_entities.contains(&entity) {
             continue;
         }
 
-        let laser_scale = laser_tf.scale.xy();
+        let entity_scale = entity_tf.scale.xy();
 
-        // iterate over enemies
-        for (enemy_entity, enemy_tf, enemy_size, enemy_type) in enemy_query.iter() {
-            if despawn_entities.contains(&enemy_entity) || despawn_entities.contains(&laser_entity)
-            {
+        for (laser_entity, laser_tf, laser_size, from_entity) in laser_query.iter() {
+            // if entity is player and it's a player laser then skip
+            // same if enemy entity and enemy laser
+            match entity_type {
+                EntityType::Player => {
+                    if let FromEntity::FromPlayer = from_entity {
+                        continue;
+                    }
+                }
+                _ => {
+                    if let FromEntity::FromEnemy = from_entity {
+                        continue;
+                    }
+                }
+            };
+
+            if processed_entities.contains(&entity) || processed_entities.contains(&laser_entity) {
                 continue;
             }
 
-            let enemy_scale = enemy_tf.scale.xy();
-
-            // determine if laser and enemy collides
-            let collision = collide(
-                laser_tf.translation,
-                laser_size.0 * laser_scale,
-                enemy_tf.translation,
-                enemy_size.0 * enemy_scale,
-            );
-
-            // perform collision
-            if collision.is_some() {
-                // remove enemy
-                ev_despawn.send(DespawnEntity {
-                    entity: enemy_entity,
-                    entity_type: enemy_type.clone(),
-                });
-                despawn_entities.insert(enemy_entity);
-
-                // remove laser
-                commands.entity(laser_entity).despawn();
-                despawn_entities.insert(laser_entity);
-
-                // spawn the ExplosionToSpawn
-                commands
-                    .spawn()
-                    .insert(ExplosionToSpawn(enemy_tf.translation));
-            }
-        }
-    }
-}
-
-fn enemy_laser_hit_player_system(
-    mut commands: Commands,
-    mut player_state: ResMut<PlayerState>,
-    time: Res<Time>,
-    laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromEnemy>)>,
-    player_query: Query<(Entity, &Transform, &SpriteSize), (With<Player>, Without<Invincibility>)>,
-) {
-    if let Ok((player_entity, player_tf, player_size)) = player_query.get_single() {
-        let player_scale = player_tf.scale.xy();
-
-        for (laser_entity, laser_tf, laser_size) in laser_query.iter() {
             let laser_scale = laser_tf.scale.xy();
 
-            // determine if collided
+            // determine if the collision has happened
             let collision = collide(
                 laser_tf.translation,
                 laser_size.0 * laser_scale,
-                player_tf.translation,
-                player_size.0 * player_scale,
+                entity_tf.translation,
+                entity_size.0 * entity_scale,
             );
 
-            // perform collision
+            // laser has collided with the entity
             if collision.is_some() {
-                commands.entity(player_entity).despawn();
-                player_state.shot(time.seconds_since_startup());
-
                 // remove laser
                 commands.entity(laser_entity).despawn();
+                processed_entities.insert(laser_entity);
 
-                // spawn the explosionToSpawn
-                commands
-                    .spawn()
-                    .insert(ExplosionToSpawn(player_tf.translation));
+                // Add hit to entity so that another system processes it
+                commands.entity(entity).insert(IsHit);
+                processed_entities.insert(entity);
 
                 break;
             }

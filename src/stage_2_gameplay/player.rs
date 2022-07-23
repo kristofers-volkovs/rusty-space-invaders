@@ -1,34 +1,32 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use iyes_loopless::prelude::{ConditionSet, FixedTimestepStage};
+use iyes_loopless::prelude::{
+    AppLooplessStateExt, ConditionHelpers, ConditionSet, FixedTimestepStage, IntoConditionalSystem,
+};
 
+use super::components::{
+    DespawnEntity, EntityType, ExplosionToSpawn, FromEntity, IsHit, IsHittable,
+};
 use super::constants::{
-    PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, PLAYER_SPAWN, SPRITE_SCALE,
+    HIT_DETECTION, HIT_PROCESSING, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE,
+    SPRITE_SCALE,
 };
 use super::resources::{GameTextures, PlayerState};
+use crate::shared::components::{GameRunning, SpawnPlayer};
 use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{
-    FiringCooldownTimer, FromPlayer, Invincibility, Laser, Movable, Player,
-    SpriteSize, Velocity,
+    FiringCooldownTimer, Invincibility, Laser, Movable, Player, SpriteSize, Velocity,
 };
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        let mut fixedupdate = SystemStage::parallel();
-        fixedupdate.add_system_set(
-            ConditionSet::new()
+        app.add_system(
+            player_spawn_system
                 .run_in_state(AppState::Gameplay)
-                .with_system(player_spawn_system)
-                .into(),
-        );
-
-        app.add_stage_before(
-            CoreStage::Update,
-            PLAYER_SPAWN,
-            FixedTimestepStage::from_stage(Duration::from_secs_f32(0.5), fixedupdate),
+                .run_if_resource_added::<SpawnPlayer>(),
         )
         .add_system_set(
             ConditionSet::new()
@@ -37,52 +35,44 @@ impl Plugin for PlayerPlugin {
                 .with_system(player_fire_system)
                 .with_system(firing_cooldown_system)
                 .into(),
+        )
+        .add_system(
+            player_hit_system
+                .run_in_state(AppState::Gameplay)
+                .label(HIT_PROCESSING)
+                .after(HIT_DETECTION),
         );
     }
 }
 
 fn player_spawn_system(
     mut commands: Commands,
-    mut player_state: ResMut<PlayerState>,
-    time: Res<Time>,
     game_textures: Res<GameTextures>,
     win_size: Res<WinSize>,
 ) {
-    let now = time.seconds_since_startup();
-    let last_shot = player_state.last_shot;
-    let health_remaining = player_state.health;
-
-    if !player_state.on
-        && (last_shot == -1. || now > last_shot + PLAYER_RESPAWN_DELAY)
-        && health_remaining > 0
-    {
-        // add player
-        let bottom = -win_size.h / 2.; // bottom of the screen
-        commands
-            .spawn_bundle(SpriteBundle {
-                texture: game_textures.player.clone(),
-                transform: Transform {
-                    translation: Vec3::new(
-                        0.,
-                        bottom + PLAYER_SIZE.1 / 2. * SPRITE_SCALE + 5.,
-                        10.,
-                    ),
-                    scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
-                    ..Default::default()
-                },
+    // add player
+    let bottom = -win_size.h / 2.; // bottom of the screen
+    commands
+        .spawn_bundle(SpriteBundle {
+            texture: game_textures.player.clone(),
+            transform: Transform {
+                translation: Vec3::new(0., bottom + PLAYER_SIZE.1 / 2. * SPRITE_SCALE + 5., 10.),
+                scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
                 ..Default::default()
-            })
-            .insert(Player)
-            .insert(SpriteSize::from(PLAYER_SIZE))
-            .insert(Movable {
-                auto_despawn: false,
-            })
-            .insert(Velocity { x: 0., y: 0. })
+            },
+            ..Default::default()
+        })
+        .insert(Player)
+        .insert(EntityType::Player)
+        .insert(SpriteSize::from(PLAYER_SIZE))
+        .insert(Movable {
+            auto_despawn: false,
+        })
+        .insert(IsHittable)
+        .insert(Velocity { x: 0., y: 0. })
         .insert(Invincibility::from(3.));
 
-
-        player_state.spawned();
-    }
+    commands.remove_resource::<SpawnPlayer>()
 }
 
 fn player_fire_system(
@@ -110,7 +100,7 @@ fn player_fire_system(
                     .insert(Movable { auto_despawn: true })
                     .insert(Velocity { x: 0., y: 1. })
                     .insert(SpriteSize::from(PLAYER_LASER_SIZE))
-                    .insert(FromPlayer)
+                    .insert(FromEntity::FromPlayer)
                     .insert(Laser);
             };
 
@@ -120,6 +110,31 @@ fn player_fire_system(
             commands
                 .entity(player_entity)
                 .insert(FiringCooldownTimer::default());
+        }
+    }
+}
+
+fn player_hit_system(
+    mut commands: Commands,
+    mut ev_despawn: EventWriter<DespawnEntity>,
+    mut player_state: ResMut<PlayerState>,
+    query: Query<(Entity, &Transform, &EntityType), (With<Player>, With<IsHit>)>,
+) {
+    if let Ok((entity, entity_tf, entity_type)) = query.get_single() {
+        player_state.shot();
+
+        if player_state.health == 0 {
+            ev_despawn.send(DespawnEntity {
+                entity: entity,
+                entity_type: entity_type.clone(),
+            });
+
+            commands
+                .spawn()
+                .insert(ExplosionToSpawn(entity_tf.translation));
+        } else {
+            commands.entity(entity).remove::<IsHit>();
+            commands.entity(entity).insert(Invincibility::from(3.));
         }
     }
 }
