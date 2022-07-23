@@ -14,6 +14,7 @@ use super::resources::GameTextures;
 use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{Laser, Movable, Point, SpriteSize, Velocity};
 
+use self::asteroid::asteroid_collision_system;
 use self::components::{
     Asteroid, Enemy, EnemyBundle, EnemyCount, EnemyMovement, EnemyMovementState, EnemyStats,
     Formation, Minion, SpawningDirection,
@@ -21,6 +22,7 @@ use self::components::{
 use self::minion::minion_fire_system;
 use self::motion::{calculate_spawning_point, enemy_movement_system};
 
+pub mod asteroid;
 pub mod components;
 pub mod formation;
 pub mod minion;
@@ -50,6 +52,13 @@ impl Plugin for EnemyPlugin {
                     .with_system(enemy_movement_system)
                     .with_system(minion_fire_system)
                     .into(),
+            )
+            // Collision processing systems
+            // They might end up removing entities so they must be executed in order
+            .add_system(
+                asteroid_collision_system
+                    .run_in_state(AppState::Gameplay)
+                    .label(HIT_DETECTION),
             )
             .add_system(
                 enemy_hit_system
