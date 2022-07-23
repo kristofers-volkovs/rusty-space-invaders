@@ -7,7 +7,7 @@ use iyes_loopless::state::NextState;
 
 use super::components::{
     DespawnEntity, EntityType, Explosion, ExplosionTimer, ExplosionToSpawn, FromPlayer,
-    Invincibility, InvincibilityTimer, Laser, Movable, Player, SpriteSize, Velocity,
+    Invincibility, Laser, Movable, Player, SpriteSize, Velocity,
 };
 use super::constants::{
     BASE_SPEED, ENEMY_LASER_SPRITE, ENEMY_SPRITE, EXPLOSION_LEN, EXPLOSION_SHEET, GAMEPLAY_RESET,
@@ -290,19 +290,14 @@ fn explosion_animation_system(
 fn invincibility_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(
-        Entity,
-        &mut InvincibilityTimer,
-        &mut Invincibility,
-        &mut Sprite,
-    )>,
+    mut query: Query<(Entity, &mut Invincibility, &mut Sprite)>,
 ) {
-    for (entity, mut timer, mut invincibility, mut sprite) in query.iter_mut() {
-        invincibility.0 -= time.delta().as_secs_f32();
-        timer.0.tick(time.delta());
+    for (entity, mut invincibility, mut sprite) in query.iter_mut() {
+        invincibility.length -= time.delta().as_secs_f32();
+        invincibility.animation_timer.tick(time.delta());
 
         // entities alpha color is reset so it seems like the player is flickering
-        if timer.0.finished() {
+        if invincibility.animation_timer.finished() {
             let color_a = sprite.color.a();
             match sprite.color.a() {
                 a if a == 1. => sprite.color.set_a(0.3),
@@ -311,9 +306,8 @@ fn invincibility_system(
         }
 
         // when invincibility runs out then remove invincibility component and reset alpha for color
-        if invincibility.0 < 0. {
+        if invincibility.length < 0. {
             commands.entity(entity).remove::<Invincibility>();
-            commands.entity(entity).remove::<InvincibilityTimer>();
             sprite.color.set_a(1.);
         }
     }

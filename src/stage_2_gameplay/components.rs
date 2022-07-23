@@ -36,20 +36,17 @@ impl From<(f32, f32)> for SpriteSize {
 }
 
 #[derive(Component)]
-pub struct Invincibility(pub f32);
+pub struct Invincibility {
+    pub length: f32,
+    pub animation_timer: Timer,
+}
 
 impl From<f32> for Invincibility {
     fn from(val: f32) -> Self {
-        Invincibility(val)
-    }
-}
-
-#[derive(Component)]
-pub struct InvincibilityTimer(pub Timer);
-
-impl Default for InvincibilityTimer {
-    fn default() -> Self {
-        Self(Timer::from_seconds(0.2, true))
+        Invincibility {
+            length: val,
+            animation_timer: Timer::from_seconds(0.2, true),
+        }
     }
 }
 

@@ -9,7 +9,7 @@ use super::constants::{
 use super::resources::{GameTextures, PlayerState};
 use crate::shared::resources::{AppState, WinSize};
 use crate::stage_2_gameplay::components::{
-    FiringCooldownTimer, FromPlayer, Invincibility, InvincibilityTimer, Laser, Movable, Player,
+    FiringCooldownTimer, FromPlayer, Invincibility, Laser, Movable, Player,
     SpriteSize, Velocity,
 };
 
@@ -78,8 +78,8 @@ fn player_spawn_system(
                 auto_despawn: false,
             })
             .insert(Velocity { x: 0., y: 0. })
-            .insert(Invincibility::from(3.))
-            .insert(InvincibilityTimer::default());
+        .insert(Invincibility::from(3.));
+
 
         player_state.spawned();
     }
