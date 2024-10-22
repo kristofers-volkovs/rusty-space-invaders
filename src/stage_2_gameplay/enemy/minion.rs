@@ -3,14 +3,14 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 
-use crate::stage_2_gameplay::{
+use crate::{stage_2_gameplay::{
     components::{
         DespawnEntity, EntityType, ExplosionToSpawn, FromEntity, IsHit, Laser, Movable, SpriteSize,
         Velocity,
     },
     constants::{ENEMY_LASER_SIZE, SPRITE_SCALE},
     resources::GameTextures,
-};
+}, shared::resources::WinSize};
 
 use super::components::{EnemyStats, Minion};
 
@@ -41,5 +41,15 @@ pub fn minion_fire_system(
                 .insert(Movable { auto_despawn: true })
                 .insert(Velocity { x: 0., y: -1. });
         }
+    }
+}
+
+pub fn minion_navigation_system(
+    mut commands: Commands,
+    win_size: Res<WinSize>,
+    mut query: Query<&mut Transform, With<Minion>>,
+) {
+    for (mut tf) in query.iter_mut() {
+        println!("");
     }
 }

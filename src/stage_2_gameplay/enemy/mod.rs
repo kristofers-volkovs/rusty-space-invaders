@@ -41,6 +41,7 @@ impl Plugin for EnemyPlugin {
         );
 
         app
+            // .add_event::<EnemySpawnEvent>()
             .add_stage_before(
                 CoreStage::Update,
                 ENEMY_SPAWN,
@@ -68,6 +69,37 @@ impl Plugin for EnemyPlugin {
             );
     }
 }
+
+// fn enemy_spawn_system(
+//     mut commands: Commands,
+//     mut ev_spawn: EventWriter<EnemySpawnEvent>,
+//     game_textures: Res<GameTextures>,
+//     mut enemy_count: ResMut<EnemyCount>,
+//     win_size: Res<WinSize>,
+// ) {
+//     let spawn_enemy: Option<SpawnEnemy> = if enemy_count.asteroids < ENEMY_MAX {
+//         let starting_point = calculate_spawning_point(SpawningDirection::Top, &win_size);
+
+//         Some(SpawnEnemy {
+//             bundle: EnemyBundle {
+//                 stats: EnemyStats {
+//                     health: 1,
+//                     firing_rate: 1.,
+//                     spawn_rate: 1.,
+//                 },
+//                 movement: EnemyMovement {
+//                     speed: BASE_SPEED,
+//                     state: EnemyMovementState::Downward,
+//                     angle: -PI / 2.,
+//                 },
+//                 enemy_type: EntityType::Asteroid,
+//             },
+//             starting_point: starting_point,
+//             texture: game_textures.enemy.clone(),
+//         })
+//     } else if enemy_count.minions < ENEMY_MAX {
+//     } else {}
+// }
 
 fn enemy_spawn_system(
     mut commands: Commands,
@@ -114,26 +146,27 @@ fn enemy_spawn_system(
 
         let starting_point = calculate_spawning_point(SpawningDirection::Top, &win_size);
         let (x, y) = (starting_point.x, starting_point.y);
+        let angle: f32 = if x < 0. { PI } else { 0. };
 
-        // compute the pivot point x/y
-        let w_span = win_size.w / 4.;
-        let h_span = win_size.h / 3. + 50.;
-        let pivot = Point {
-            x: rng.gen_range(-w_span..w_span),
-            y: rng.gen_range(0.0..h_span),
-        };
+        // // compute the pivot point x/y
+        // let w_span = win_size.w / 4.;
+        // let h_span = win_size.h / 3. + 50.;
+        // let pivot = Point {
+        //     x: rng.gen_range(-w_span..w_span),
+        //     y: rng.gen_range(0.0..h_span),
+        // };
 
-        // compute the radius
-        let radius = (rng.gen_range(80.0..150.), 100.);
+        // // compute the radius
+        // let radius = (rng.gen_range(80.0..150.), 100.);
 
-        // compute the start angle
-        let angle = (y - pivot.y).atan2(x - pivot.x);
+        // // compute the start angle
+        // let angle = (y - pivot.y).atan2(x - pivot.x);
 
-        let formation = Formation {
-            radius,
-            pivot,
-            start: starting_point,
-        };
+        // let formation = Formation {
+        //     radius,
+        //     pivot,
+        //     start: starting_point,
+        // };
 
         commands
             .spawn_bundle(SpriteBundle {
@@ -148,7 +181,7 @@ fn enemy_spawn_system(
             .insert_bundle(EnemyBundle {
                 movement: EnemyMovement {
                     speed: BASE_SPEED,
-                    state: EnemyMovementState::Circle(formation),
+                    state: EnemyMovementState::Stationary,
                     angle,
                 },
                 stats: EnemyStats {

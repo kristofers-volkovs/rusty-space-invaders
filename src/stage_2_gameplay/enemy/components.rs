@@ -33,6 +33,16 @@ pub struct EnemyBundle {
     pub enemy_type: EntityType,
 }
 
+// Events
+
+pub struct EnemySpawnEvent(pub SpawnEnemy);
+
+pub struct SpawnEnemy {
+    pub bundle: EnemyBundle,
+    pub texture: Handle<Image>,
+    pub starting_point: Point,
+}
+
 // Type components
 
 #[derive(Component)]
@@ -49,7 +59,7 @@ pub enum EnemyMovementState {
     Downward,
     Travel(Point),
     Seeking,
-    Circle(Formation),
+    CircleFormation(Formation),
 }
 
 impl Default for EnemyMovementState {
@@ -80,3 +90,23 @@ pub struct EnemyStats {
     pub spawn_rate: f32,  // from 0 to 1
     pub firing_rate: f32, // from 0 to 1
 }
+
+// AI components
+
+#[derive(Component)]
+pub struct EnemyAI {
+    pub decision: EnemyDecision,
+    pub reset_time: f32,
+    pub timer: Timer,
+}
+
+pub enum EnemyDecision {
+    None,
+    Wander,
+}
+
+// Action nodes - success, failure, running
+// Composite node - sequence nodes, executes all of the sequence nodes until one fails
+// selector nodes, execute all nodes in a sequence until one of them succeeds
+// for long running tasks create exclusive nodes that go until they finish running
+

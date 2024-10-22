@@ -6,7 +6,7 @@ use rand::{thread_rng, Rng};
 use crate::{
     shared::resources::WinSize,
     stage_2_gameplay::{
-        components::Point, constants::TIME_STEP, enemy::components::EnemyMovementState,
+        components::{Point, EntityType, DespawnEntity}, constants::TIME_STEP, enemy::components::EnemyMovementState,
     },
 };
 
@@ -36,10 +36,10 @@ pub fn calculate_spawning_point(spawn_direction: SpawningDirection, win_size: &W
 pub fn enemy_movement_system(
     mut commands: Commands,
     win_size: Res<WinSize>,
-    mut enemy_count: ResMut<EnemyCount>,
-    mut query: Query<(Entity, &mut Transform, &mut EnemyMovement), With<Enemy>>,
+    mut ev_despawn: EventWriter<DespawnEntity>,
+    mut query: Query<(Entity, &mut Transform, &mut EnemyMovement, &EntityType), With<Enemy>>,
 ) {
-    for (entity, mut transform, mut movement) in query.iter_mut() {
+    for (entity, mut transform, mut movement, entity_type) in query.iter_mut() {
         // current position
         let (x_org, y_org) = (transform.translation.x, transform.translation.y);
 
@@ -78,7 +78,7 @@ pub fn enemy_movement_system(
                 Point { x, y }
             }
             EnemyMovementState::Seeking => Point { x: x_org, y: y_org },
-            EnemyMovementState::Circle(formation) => {
+            EnemyMovementState::CircleFormation(formation) => {
                 // max distance in 1 sec
                 let max_distance = TIME_STEP * movement.speed;
 
@@ -129,8 +129,10 @@ pub fn enemy_movement_system(
             || translation.x > win_size.w / 2. + MARGIN
             || translation.x < -win_size.w / 2. - MARGIN
         {
-            commands.entity(entity).despawn();
-            enemy_count.asteroids -= 1;
+            ev_despawn.send(DespawnEntity {
+                entity: entity,
+                entity_type: entity_type.clone(),
+            });
         }
     }
 }

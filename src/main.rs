@@ -31,7 +31,7 @@ fn main() {
         // --- General systems ---
         .add_startup_system(setup_system)
         // --- Initial state ---
-        .add_loopless_state(AppState::MainMenu)
+        .add_loopless_state(AppState::Gameplay)
         // --- Stages ---
         .add_plugin(MainMenuStage)
         .add_plugin(GameplayStage)
